@@ -76,6 +76,12 @@ details.earlier .turn + .turn::before{display:none}
 .person canvas{width:48px;height:48px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .person .pn{font-size:17px;line-height:1.25}
 .person .pr{font-size:14.5px;color:var(--muted);font-style:italic;line-height:1.3}
+.person .pi{flex:1;min-width:0}
+.repm{margin-left:auto;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.repm .pips{display:flex;gap:2px}.repm .pips i{width:7px;height:7px;background:var(--chip);border:1px solid var(--line)}
+.repm .pips i.z{background:var(--line)}.repm .pips i.pos{background:var(--good);border-color:var(--good)}.repm .pips i.neg{background:var(--hp);border-color:var(--hp)}
+.repm .rw{font-family:var(--display);font-size:6.5px;letter-spacing:.05em;color:var(--muted)}.repm .rw.pos{color:var(--good)}.repm .rw.neg{color:var(--hp)}
+.person.grp{padding:10px 0}
 .person .rel{margin-left:auto;font-family:var(--display);font-size:7px;color:var(--gold);flex:none}
 .item canvas.ic{width:36px;height:36px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .status{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
@@ -795,10 +801,20 @@ function showNotes(){
   const list=(arr,empty)=>Array.isArray(arr)&&arr.length?'<ul class="plain">'+arr.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">'+empty+'</p>';
   journalTab='notes'; openModal('JOURNAL',tabsBar('journal','notes')+'<div class="grid"><div class="wide"><div class="k">WHAT '+PR().HE+' SUSPECTS</div>'+list(n.suspicions,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT '+PR().HE+' HAS NOTICED</div>'+list(n.clues,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT '+PR().HE+' MEANS TO DO</div>'+list(n.aims,'Nothing decided.')+'</div><div class="wide"><div class="k">OPEN THREADS</div>'+list(p.open_threads,'None.')+'</div></div>');
 }
+const REP_WORD={'-3':'Enemy','-2':'Against you','-1':'Cool','0':'Neutral','1':'Friendly','2':'Ally','3':'Loyal'};
+function repMeter(v){let p='';for(let i=-3;i<=3;i++)p+='<i class="'+(i===0?'z ':'')+((v>0&&i>0&&i<=v)||(v<0&&i<0&&i>=v)?(v>0?'pos':'neg'):'')+'"></i>';
+  return '<div class="repm"><span class="pips">'+p+'</span><span class="rw '+(v>0?'pos':v<0?'neg':'')+'">'+(v>0?'+':'')+v+' '+REP_WORD[String(v)]+'</span></div>'}
+function repKeyFor(name,keys){const n=name.toLowerCase(),last=n.split(' ').pop();
+  return keys.find(k=>k.toLowerCase()===n)||keys.find(k=>{const kl=k.toLowerCase();return n.includes(kl)||kl.includes(last)&&last.length>3})||null}
 function showPeople(){
-  const cast=(state&&state.cast)||{}; const names=Object.keys(cast);
-  journalTab='people'; if(!names.length)return openModal('JOURNAL',tabsBar('journal','people')+'<p class="note">Nobody yet. They arrive as you meet them.</p>');
-  openModal('JOURNAL',tabsBar('journal','people')+names.map(n=>{const sp=cast[n];return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(sp.relationship!=null&&sp.relationship!==''?'<span class="rel">'+(sp.relationship>0?'+':'')+esc(sp.relationship)+'</span>':'')+'</div>'}).join(''));
+  const cast=(state&&state.cast)||{}; const names=Object.keys(cast); const rep=(state&&state.sheet&&state.sheet.reputation)||{}; const keys=Object.keys(rep); const used=new Set();
+  journalTab='people';
+  const legend='<p class="note">Standing runs from −3 to +3. At +2 someone helps you without being asked; at +3 they turn up when it counts; at −2 they work against you. People get a score the first time they matter.</p>';
+  const groups=()=>{const g=keys.filter(k=>!used.has(k));return g.length?'<div class="k" style="margin-top:16px">STANDING</div>'+g.map(k=>{const v=Math.max(-3,Math.min(3,Math.round(+rep[k]||0)));return '<div class="person grp"><div><div class="pn">'+esc(k)+'</div></div>'+repMeter(v)+'</div>'}).join(''):''};
+  if(!names.length)return openModal('JOURNAL',tabsBar('journal','people')+legend+'<p class="note">Nobody yet. They arrive as you meet them.</p>'+groups());
+  const rows=names.map(n=>{const sp=cast[n];const k=repKeyFor(n,keys);if(k)used.add(k);const v=k!=null?Math.max(-3,Math.min(3,Math.round(+rep[k]||0))):null;
+    return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div class="pi"><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(v!=null?repMeter(v):'<div class="repm"><span class="rw">not yet</span></div>')+'</div>'}).join('');
+  openModal('JOURNAL',tabsBar('journal','people')+legend+rows+groups());
   $('m-body').querySelectorAll('canvas[data-who]').forEach(c=>drawPortrait(c.getContext('2d'),cast[c.dataset.who]));
 }
 function showRecap(){journalTab='recap';const c=(state&&state.chronicle)||[];openModal('JOURNAL',tabsBar('journal','recap')+(c.length?'<ol style="padding-left:1.2em;margin:0">'+c.slice(-12).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ol>':'<p class="note">Nothing yet.</p>'))}
