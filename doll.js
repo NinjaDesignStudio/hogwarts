@@ -2,7 +2,7 @@
 const DOLL={
   skins:['#f6dcc6','#f1d2b6','#e3b995','#d4a57e','#c99470','#a87650','#8a5a3a','#5e3c28'],
   hairColours:{black:'#1b1a1f',dark_brown:'#3a2616',brown:'#5a3a24',light_brown:'#7a5434',auburn:'#8a3a22',ginger:'#c4582a',blond:'#d9b25c',platinum:'#e6dab0',grey:'#9a9aa0'},
-  hairStyles:['short','messy','parted','swept','spiky','curly','long','buzz'],
+  hairStyles:['short','messy','parted','swept','spiky','curly','long','buzz','bob','ponytail','plaits'],
   eyeColours:{brown:'#5a3a1e',dark_brown:'#2e1c10',hazel:'#7a6a2a',green:'#3f7a46',blue:'#3a6aa8',grey:'#7a8a96'},
   house:{Gryffindor:['#8b1e24','#d9a94b'],Slytherin:['#1a4a2a','#c0c0c0'],Ravenclaw:['#1f3a6a','#b07a30'],Hufflepuff:['#d9b23a','#1a1a1a']}
 };
@@ -18,8 +18,11 @@ function drawDoll(cx,look,eq,house){
   // broom behind
   if(eq.broom==='broom'){for(let i=0;i<26;i++)r(5+i,42-i,2,1,i%5?'#7a5a3a':'#5a3a24');for(let i=0;i<6;i++)r(0+i,41+i,7-i,1,'#c9a24a');r(2,47,5,1,'#9a7a3a')}
   // legs & feet
-  const trousers=(robes==='muggle_clothes'||robes==='jumper'||robes==='hoodie'||robes==='tshirt')?'#2a3a6a':'#1a1418';
+  const casual=(robes==='muggle_clothes'||robes==='jumper'||robes==='hoodie'||robes==='tshirt');
+  const girlUniform=look.gender==='girl'&&!casual&&robes!=='quidditch_robes';
+  const trousers=casual?'#2a3a6a':(girlUniform?'#34343e':'#1a1418');
   r(12,34,3,8,trousers); r(17,34,3,8,trousers);
+  if(girlUniform){r(10,33,12,3,'#4a4a54');r(10,35,12,1,'#3a3a44')}
   if(feet==='boots'){r(11,40,5,6,'#5a3a24');r(16,40,5,6,'#5a3a24');r(11,40,5,1,'#7a5a3a');r(16,40,5,1,'#7a5a3a')}
   else if(feet==='trainers'){r(11,43,5,3,'#f0f0f0');r(16,43,5,3,'#f0f0f0');r(11,43,5,1,'#3a5a8a');r(16,43,5,1,'#3a5a8a');r(11,45,5,1,'#b0b0b0');r(16,45,5,1,'#b0b0b0');r(15,44,1,1,'#3a5a8a');r(20,44,1,1,'#3a5a8a')}
   else if(feet==='school_shoes'){r(11,43,5,3,'#111');r(16,43,5,3,'#111');r(11,43,5,1,'#333');r(16,43,5,1,'#333')}
@@ -77,6 +80,9 @@ function drawDoll(cx,look,eq,house){
   if(st==='messy'){r(10,4,2,2,hair);r(13,3,2,2,hair);r(17,3,2,3,hair);r(20,4,2,2,hair);r(10,8,1,3,hair);r(21,7,1,4,hair);r(12,8,1,1,hair);r(19,8,1,2,hair);r(15,8,1,1,hairHi)}
   if(st==='parted'){r(15,5,1,3,hairHi);r(11,6,1,7,hair);r(20,6,1,6,hair);r(12,8,2,1,hair);r(19,8,1,1,hair)}
   if(st==='curly'){for(let i=0;i<6;i++)r(10+i*2,4+(i%2),2,2,hair);r(10,7,1,6,hair);r(21,7,1,6,hair);r(9,9,1,3,hair);r(22,9,1,3,hair);r(10,11,1,1,hairHi);r(21,12,1,1,hairHi)}
+  if(st==='bob'){r(10,6,2,8,hair);r(20,6,2,8,hair);r(10,13,2,1,shade(hair,.85));r(20,13,2,1,shade(hair,.85));r(12,7,3,1,hair);r(10,7,1,1,hairHi)}
+  if(st==='ponytail'){r(12,7,1,1,hair);r(21,8,2,3,hair);r(22,11,2,8,hair);r(22,18,1,2,hair);r(21,8,1,1,'#8b1e24');r(23,12,1,4,hairHi)}
+  if(st==='plaits'){for(let i=0;i<6;i++){r(9,10+i*2,2,2,i%2?hairHi:hair);r(21,10+i*2,2,2,i%2?hairHi:hair)}r(10,7,1,3,hair);r(21,7,1,3,hair);r(9,22,2,1,'#8b1e24');r(21,22,2,1,'#8b1e24')}
   if(st==='long'){r(9,6,3,16,hair);r(20,6,3,16,hair);r(9,21,2,2,hair);r(21,21,2,2,hair);r(10,8,1,1,hairHi);r(21,10,1,1,hairHi)}
   // hat
   // hats sit on top of the head; hair below the brim stays visible
