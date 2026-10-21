@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hogwarts">
+<meta name="theme-color" content="#0b1026">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<style>html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Robert Thunder's Hogwarts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Press+Start+2P&display=swap">
+<style>
+/* Layout: a scrolling book. Pixel painting across the top, serif prose, choices as parchment cards under the text. Sheet, notes and save live in a bottom drawer. */
+:root{
+  --bg:#e9dfc9; --paper:#f6efdf; --paper2:#efe6d0; --ink:#2b2219; --muted:#7a6b57; --line:#d3c4a6; --chip:#e7dcc3;
+  --accent:#8c1f25; --gold:#9c7a24; --hp:#a8322e; --mp:#2f5f8a; --good:#3d6b3a;
+  --display:'Press Start 2P', 'Courier New', monospace;
+  --body:'Crimson Pro', Georgia, 'Times New Roman', serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b;
+  --accent:#d94b52; --gold:#d9a94b; --hp:#d9554f; --mp:#5f9ad0; --good:#6fb26a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b;
+  --accent:#d94b52; --gold:#d9a94b; --hp:#d9554f; --mp:#5f9ad0; --good:#6fb26a; color-scheme:dark }
+
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18.5px;line-height:1.52;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0b1026}
+#app{min-height:100%;max-width:720px;margin:0 auto;background:var(--paper);box-shadow:0 0 0 1px var(--line)}
+.top{position:relative;aspect-ratio:16/9;max-width:100%;overflow:hidden;background:#0b1026;line-height:0;border-bottom:2px solid var(--gold)}
+.top canvas{width:100%;height:100%;max-width:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(to top,rgba(5,6,16,.75),rgba(5,6,16,0))}
+.caption{position:absolute;left:0;right:0;bottom:0;z-index:1;display:flex;justify-content:space-between;gap:10px;
+  padding:7px max(12px,env(safe-area-inset-right,0px)) 7px max(12px,env(safe-area-inset-left,0px));
+  font-family:var(--display);font-size:8px;line-height:1.5;letter-spacing:.04em;color:#f3ead0;text-shadow:0 1px 0 #000}
+.caption span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.caption .date{color:#d9c58a}
+.brand{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:8px;z-index:1;padding:5px 7px;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.55);border-radius:2px;line-height:1.5;display:flex;gap:10px;align-items:center}
+.brand .g{display:inline-flex;gap:3px;align-items:center}
+.brand .g i{display:inline-block;width:4px;height:6px;background:#3a3a44}
+.brand .g i.on{background:var(--hp)} .brand .g.m i.on{background:#5f9ad0}
+
+#page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 10px}
+.turn{max-width:36em;margin:0 auto}
+.turn + .turn{margin-top:26px;padding-top:20px;border-top:1px solid var(--line);position:relative}
+.turn + .turn::before{content:"";position:absolute;top:-4px;left:50%;width:7px;height:7px;margin-left:-3px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 0 3px var(--paper)}
+.turn.old{color:var(--muted)}
+details.earlier{max-width:36em;margin:0 auto 18px}
+details.earlier summary{list-style:none;cursor:pointer;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+details.earlier summary::-webkit-details-marker{display:none}
+details.earlier summary::after{content:"SHOW"} details.earlier[open] summary::after{content:"HIDE"}
+details.earlier .turn{margin-top:18px}
+details.earlier .turn + .turn{border-top:1px solid var(--line);padding-top:16px}
+details.earlier .turn + .turn::before{display:none}
+.doc{font-style:italic;color:var(--ink);padding-left:14px;border-left:1px solid var(--gold);margin:0 0 .95em;white-space:pre-line}
+.you{font-style:italic;color:var(--muted);margin:0 0 12px;padding-left:14px;border-left:2px solid var(--gold)}
+.turn p{margin:0 0 .95em;text-wrap:pretty}
+.turn p:last-child{margin-bottom:0}
+.turn.latest p.lede::first-letter{font-family:var(--body);font-weight:600;font-size:3.1em;line-height:.8;float:left;padding:6px 7px 0 0;color:var(--accent)}
+.present{display:flex;flex-wrap:wrap;gap:10px 14px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.who{display:flex;flex-direction:column;align-items:center;gap:4px;width:52px}
+.who canvas{width:48px;height:48px;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.who canvas.cr{width:40px;height:40px;margin-top:4px;margin-bottom:4px}
+.who span{font-family:var(--display);font-size:6px;letter-spacing:.03em;color:var(--muted);text-align:center;line-height:1.4;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.person{display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:8px 0}
+.person canvas{width:48px;height:48px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.person .pn{font-size:17px;line-height:1.25}
+.person .pr{font-size:14.5px;color:var(--muted);font-style:italic;line-height:1.3}
+.person .rel{margin-left:auto;font-family:var(--display);font-size:7px;color:var(--gold);flex:none}
+.item canvas.ic{width:36px;height:36px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.status{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.status span{font-family:var(--display);font-size:7px;line-height:1.5;letter-spacing:.03em;color:var(--gold);background:var(--chip);border:1px solid var(--line);padding:5px 7px;border-radius:3px}
+.status span.dn{color:var(--hp)} .status span.up{color:var(--good)}
+#busy{max-width:36em;margin:26px auto 0;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-style:italic;display:flex;gap:12px;align-items:center}
+#busy .candle{width:20px;height:20px;flex:none;image-rendering:pixelated}
+#busy .stop{margin-left:auto;font-style:normal}
+.empty{max-width:34em;margin:30px auto;text-align:center;color:var(--muted);font-style:italic}
+.note{color:var(--muted);font-style:italic;font-size:16.5px}
+.live{max-width:36em;margin:22px auto 0}
+.live p{margin:0 0 .95em}
+.live .cursor{color:var(--accent);font-style:normal}
+@media (prefers-reduced-motion: no-preference){.live .cursor{animation:blink 1s steps(2) infinite}}
+@keyframes blink{to{opacity:0}}
+
+.dock{background:var(--paper2);border-top:1px solid var(--line);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px calc(18px + env(safe-area-inset-bottom,0px))}
+.dock .inner{max-width:36em;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.dock .lead{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted)}
+#options{display:flex;flex-direction:column;gap:7px}
+#options:empty{display:none}
+.opt{appearance:none;text-align:left;font:inherit;font-size:17px;line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);
+  border-radius:3px;padding:10px 12px 10px 12px;display:flex;gap:12px;align-items:baseline;cursor:pointer;transition:border-color .12s,background .12s,transform .06s}
+.opt:hover{border-color:var(--gold);background:var(--chip)}
+.opt:active{transform:translateY(1px)}
+.opt:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt .n{font-family:var(--display);font-size:9px;color:var(--accent);flex:none;width:14px;position:relative;top:-1px}
+.opt:hover .n{color:var(--gold)}
+.opt .t{flex:1 1 auto;min-width:0}
+.opt .s{font-family:var(--display);font-size:6px;letter-spacing:.06em;color:var(--muted);flex:none;align-self:center;border:1px solid var(--line);padding:3px 5px;border-radius:2px}
+.opt:disabled{opacity:.5;cursor:default}
+.opt.cont{justify-content:center;background:var(--accent);color:#fff;border-color:var(--accent);font-family:var(--display);font-size:9px;letter-spacing:.08em;padding:14px}
+.opt.cont .n{color:#fff;width:auto}
+.opt.cont .t{flex:0 0 auto}
+.opt.cont:hover{background:var(--ink)}
+.cross{font-family:var(--display);font-size:7px;letter-spacing:.06em;color:var(--accent);padding:4px 0 6px}
+#free{display:flex;gap:6px}
+#free input{flex:1 1 auto;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink)}
+#free input::placeholder{color:var(--muted);font-style:italic}
+.go{font-family:var(--display);font-size:9px;background:var(--accent);color:#fff;border:0;border-radius:3px;padding:0 14px;cursor:pointer}
+.go:disabled{opacity:.5;cursor:default}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.bar button,.mini{font-family:var(--display);font-size:7px;letter-spacing:.05em;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:3px;padding:8px 9px;cursor:pointer}
+.bar button:hover,.mini:hover{color:var(--ink);border-color:var(--gold)}
+.bar button.on{color:#fff;background:var(--accent);border-color:var(--accent)}
+.bar .sp{flex:1}
+.lead .saved{color:var(--gold)}
+
+#modal{position:fixed;inset:0;z-index:20;background:rgba(6,5,10,.6);display:flex;align-items:flex-end;justify-content:center}
+#setup{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
+#setup .card{width:100%;max-width:420px;background:var(--paper);border-top:3px solid var(--accent);border-radius:8px;padding:18px}
+#setup input,.settings input,.settings select{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink)}
+#setup h2{font-family:var(--display);font-size:9px;letter-spacing:.08em;color:var(--accent);margin:0 0 10px}
+.settings .k{margin-top:12px}
+.settings label.chk{display:flex;gap:10px;align-items:center;font-size:17px;margin-top:12px}
+.vstat{font-family:var(--display);font-size:6.5px;letter-spacing:.05em;color:var(--muted);margin-top:8px}
+#modal .card{width:100%;max-width:720px;max-height:88%;overflow-y:auto;background:var(--paper);color:var(--ink);border-radius:10px 10px 0 0;border-top:3px solid var(--accent);
+  padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));padding-block:14px calc(18px + env(safe-area-inset-bottom,0px))}
+#modal h2{font-family:var(--display);font-size:9px;letter-spacing:.08em;color:var(--accent);margin:0 0 14px;display:flex;justify-content:space-between;align-items:center}
+#modal h2 button{font-family:var(--display);font-size:7px;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:3px;padding:7px 8px;cursor:pointer}
+.k{font-family:var(--display);font-size:6.5px;color:var(--muted);letter-spacing:.08em;margin:0 0 5px}
+.v{font-size:17px;line-height:1.35}
+.hero{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.hero canvas{width:96px;height:144px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.hero .info{flex:1 1 auto;min-width:0}
+.hero .nm{font-size:20px;font-weight:600;line-height:1.2}
+.hero .hs{color:var(--muted);font-style:italic;margin-bottom:10px}
+.gauge{margin:6px 0}
+.gauge .lab{display:flex;justify-content:space-between;font-family:var(--display);font-size:6.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:3px}
+.gauge .trk{display:flex;gap:2px}
+.gauge .trk i{flex:1;height:8px;background:var(--chip);border:1px solid var(--line)}
+.gauge .trk i.on{background:var(--hp);border-color:var(--hp)} .gauge.mp .trk i.on{background:var(--mp);border-color:var(--mp)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:14px}
+.grid .wide{grid-column:1 / -1}
+.stat{display:grid;grid-template-columns:6.4em 1fr 3.2em;align-items:center;gap:8px;font-variant-numeric:tabular-nums;margin:4px 0}
+.stat .nm{font-size:17px}
+.stat .bar2{display:flex;gap:1px;height:9px;padding:1px;background:var(--chip);border:1px solid var(--line)}
+.stat .bar2 i{flex:1;display:block;background:transparent}
+.stat .bar2 i.on{background:var(--accent)} .stat .bar2 i.bn{background:var(--gold)}
+.stat .num{text-align:right;font-size:16px}
+.stat .num b{color:var(--gold);font-weight:600}
+.stat .pr{grid-column:2;display:flex;gap:1px;height:3px;margin-top:-2px}
+.stat .pr i{flex:1;background:var(--chip)} .stat .pr i.on{background:var(--muted)}
+.slots{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.slot{display:flex;flex-direction:column;gap:2px;background:var(--chip);border:1px solid var(--line);border-radius:3px;padding:7px 9px;min-width:0;cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.slot .sn{font-family:var(--display);font-size:6px;letter-spacing:.08em;color:var(--muted)}
+.slot .it{font-size:15.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .it.e{color:var(--muted);font-style:italic}
+.slot .sl-row{display:flex;gap:8px;align-items:center;min-width:0}
+.slot canvas.ic{width:24px;height:24px;flex:none;image-rendering:pixelated}
+.inv{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:7px 0}
+.item .in{flex:1 1 auto;min-width:0;cursor:pointer}
+.item .in:hover .nm{color:var(--accent)}
+.item .in .nm::after{content:' ›';color:var(--muted)}
+.itemview{display:flex;gap:16px;align-items:flex-start;margin-bottom:14px}
+.itemview canvas{width:96px;height:96px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.itemview .nm{font-size:22px;font-weight:600;line-height:1.2}
+.itemview .meta{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.itemview .meta span{font-family:var(--display);font-size:6.5px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);padding:4px 6px;border-radius:2px}
+.itemview .meta span.b{color:var(--gold);border-color:var(--gold)}
+.itemtext{font-size:17.5px;line-height:1.5;padding:14px 16px;background:var(--chip);border-left:2px solid var(--gold);white-space:pre-line;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.item .in .nm{font-size:16.5px;line-height:1.25}
+.item .in .nt{font-size:14.5px;color:var(--muted);font-style:italic;line-height:1.3}
+.item .bn{font-family:var(--display);font-size:6.5px;color:var(--gold)}
+.item .gr{font-family:var(--display);font-size:6px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);padding:2px 4px;border-radius:2px}
+.item .gr.prized{color:var(--gold);border-color:var(--gold)} .item .gr.rare{color:var(--accent);border-color:var(--accent)}
+.look{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--accent)}
+.look select{font:inherit;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink)}
+pre.save{white-space:pre-wrap;word-break:break-word;font:15px/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--chip);border:1px solid var(--line);border-radius:3px;padding:10px;margin:0 0 10px}
+ul.plain{margin:0;padding-left:1.1em}
+@media (prefers-reduced-motion: no-preference){ #busy .candle{animation:flick 1s steps(2) infinite} }
+@keyframes flick{to{opacity:.65}}
+@media (min-width:600px){ body{font-size:20px} .caption{font-size:9px} .brand{font-size:8px} .slots{grid-template-columns:repeat(3,1fr)} }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="top">
+    <canvas id="scene" width="320" height="180" aria-label="Pixel scene"></canvas>
+    <div class="brand"><span>ROBERT THUNDER</span><span class="g h" id="g-hp"></span><span class="g m" id="g-mp"></span></div>
+    <div class="caption"><span id="cap-place"></span><span id="cap-date" class="date"></span></div>
+  </header>
+  <main id="page" aria-live="polite">
+    <div id="log"><div class="empty">Opening the book…</div></div>
+    <div id="busy" hidden><canvas class="candle" width="6" height="6"></canvas><span id="busy-text">Thinking…</span><button class="go stop" id="b-stop" type="button">Stop</button></div>
+  </main>
+  <footer class="dock"><div class="inner">
+    <div class="lead" style="display:flex;justify-content:space-between"><span id="lead">WHAT DO YOU DO?</span><span class="saved" id="saved"></span></div>
+    <div id="options"></div>
+    <form id="free"><input id="action" type="text" autocomplete="off" placeholder="Or tell me what you do…"><button class="go" id="b-go" type="submit">Go</button></form>
+    <div class="bar">
+      <button type="button" id="b-listen" hidden>Listen</button>
+      <button type="button" id="b-sheet">Character</button>
+      <button type="button" id="b-notes">Notes</button>
+      <button type="button" id="b-people">People</button>
+      <button type="button" id="b-recap">Recap</button>
+      <span class="sp"></span>
+      <button type="button" id="b-len">Length: long</button>
+      <button type="button" id="b-settings">Settings</button>
+    </div>
+  </div></footer>
+  <div id="setup" hidden><div class="card">
+    <h2><span>ROBERT THUNDER’S HOGWARTS</span></h2>
+    <p class="note" id="setup-msg">Two things, once. They stay on this phone.</p>
+    <div class="k" style="margin-top:14px">STORY PASSPHRASE</div>
+    <input id="s-pass" type="password" autocomplete="off" placeholder="the passphrase Claude gave you">
+    <div class="k" style="margin-top:14px">ANTHROPIC API KEY</div>
+    <input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-…">
+    <p class="note">From platform.claude.com → API keys. Your Max plan’s monthly credits pay for it.</p>
+    <div class="row"><button class="go" id="s-go" type="button" style="padding:12px 16px">Open the book</button></div>
+    <p class="note" id="s-err" style="color:var(--accent)"></p>
+  </div></div>
+  <div id="modal" hidden><div class="card"><h2><span id="m-title"></span><button type="button" id="m-close">Close</button></h2><div id="m-body"></div></div></div>
+</div>
+
+<script src="shim.js"></script>
+<script src="art.js"></script>
+<script src="doll.js"></script>
+<script src="sprites.js"></script>
+<script src="focus.js"></script>
+<script src="voice.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const page=$('page'), log=$('log'), busy=$('busy'), busyText=$('busy-text'), optsEl=$('options'), form=$('free'), input=$('action'), goBtn=$('b-go');
+
+/* ---------- scene painting + light animation ---------- */
+const cv=$('scene'), cx=cv.getContext('2d'); cx.imageSmoothingEnabled=false;
+const imgCache={}; let cur=null, raf=0, frame=0;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function key(tag,tod){const t=(tod==='dusk'||tod==='night')?tod:'day';return (ART[tag+'_'+t]?tag:'castle')+'_'+t}
+function paint(tag,tod){
+  const k=key(tag,tod); cur={k,meta:ARTMETA[k]||{},tag,tod};
+  if(!imgCache[k]){const im=new Image();im.src=ART[k];imgCache[k]=im;im.onload=()=>{if(cur&&cur.k===k)draw()}}
+  draw(); if(!raf&&!reduce)raf=requestAnimationFrame(tick);
+}
+function draw(){
+  if(!cur)return; const im=imgCache[cur.k]; if(!im||!im.complete||!im.naturalWidth)return;
+  cx.drawImage(im,0,0);
+  drawInset();
+  cx.save(); cx.scale(2,2);
+  const m=cur.meta, f=frame;
+  (m.sparkles||[]).forEach(([x,y],i)=>{const ph=(f+i*7)%40; if(ph<6){cx.fillStyle=ph<3?'#fff8dc':'#c9c9e8';cx.fillRect(x,y,1,1);if(ph<2){cx.fillRect(x-1,y,1,1);cx.fillRect(x+1,y,1,1);cx.fillRect(x,y-1,1,1);cx.fillRect(x,y+1,1,1)}}});
+  (m.flames||[]).forEach(([x,y],i)=>{const ph=(f+i*5)%8; cx.fillStyle=ph<4?'#ffd36a':'#ff9b3a'; cx.fillRect(x,y-(ph<2?1:0),1,1); if(ph>5){cx.fillStyle='#ff8c2a';cx.fillRect(x,y+1,1,1)}});
+  (m.smoke||[]).forEach(([x,y],i)=>{for(let k=0;k<3;k++){const ph=((f/3|0)+i*9+k*7)%24; cx.fillStyle='rgba(200,200,215,'+(0.5-ph/48)+')'; cx.fillRect(x+Math.round(Math.sin((ph+k*5)/3)*1.5)-1+k,y-ph,2,2)}});
+  cx.restore();
+}
+const focusCv=document.createElement('canvas'); focusCv.width=32; focusCv.height=32; const portCv=document.createElement('canvas'); portCv.width=24; portCv.height=24; const crCv=document.createElement('canvas'); crCv.width=16; crCv.height=16;
+let focus=null;
+function setFocus(f){focus=f&&f.type&&f.type!=='none'&&f.key?f:null}
+function drawInset(){
+  if(!focus)return;
+  const X=210,Y=38,Wd=100,Ht=100;
+  // shadowed backing and frame
+  cx.fillStyle='rgba(5,6,16,.55)'; cx.fillRect(X-4,Y-4,Wd+8,Ht+8);
+  cx.fillStyle='#9c7a24'; cx.fillRect(X-2,Y-2,Wd+4,Ht+4);
+  cx.fillStyle='#1b1822'; cx.fillRect(X,Y,Wd,Ht);
+  cx.fillStyle='#2a2434'; cx.fillRect(X+2,Y+2,Wd-4,Ht-4);
+  cx.fillStyle='#d9a94b'; cx.fillRect(X,Y,Wd,1); cx.fillRect(X,Y,1,Ht);
+  cx.imageSmoothingEnabled=false;
+  try{
+    if(focus.type==='person'){const sp=(state&&state.cast||{})[focus.key]; if(!sp)return; drawPortrait(portCv.getContext('2d'),sp); cx.drawImage(portCv,X+2,Y+2,96,96)}
+    else if(focus.type==='creature'){drawCreature(crCv.getContext('2d'),focus.key); cx.drawImage(crCv,X+2,Y+2,96,96)}
+    else {drawFocus(focusCv.getContext('2d'),FOCUS_KEYS.includes(focus.key)?focus.key:'letter'); cx.drawImage(focusCv,X+2,Y+2,96,96)}
+  }catch(e){}
+}
+function tick(){frame++; if(frame%4===0)draw(); raf=requestAnimationFrame(tick)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0}else if(!reduce&&!raf)raf=requestAnimationFrame(tick)});
+paint('castle','night');
+(function(){const c=busy.querySelector('.candle').getContext('2d');c.fillStyle='#f3e6c0';c.fillRect(2,2,2,4);c.fillStyle='#ff8c2a';c.fillRect(2,0,2,2)})();
+
+/* ---------- state ---------- */
+let db=null, sampleFn=null, state=null, turns=[], ctl=null;
+const STATS=['Spellwork','Brains','Nerve','Charm','Grit'];
+const SLOTS=['wand','robes','head','neck','hands','feet','companion','broom','pocket1','pocket2'];
+const TAGS='kitchen, street, diagon, knockturn, platform, train, great_hall, dorm, common_room, corridor, dungeon, classroom, library, office, hospital, greenhouse, grounds, forest, lake, quidditch, hogsmeade, hut, castle';
+const d20=()=>1+(crypto.getRandomValues(new Uint32Array(1))[0]%20);
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const tid=n=>'t'+String(n).padStart(4,'0');
+
+function normSheet(s){
+  s=s&&typeof s==='object'?s:{};
+  s.stats=s.stats||{}; STATS.forEach(k=>{s.stats[k]=Math.max(1,Math.min(10,+s.stats[k]||1))});
+  s.practice=s.practice||{}; STATS.forEach(k=>{s.practice[k]=Math.max(0,Math.min(10,+s.practice[k]||0))});
+  s.stat_use=s.stat_use||{}; STATS.forEach(k=>{s.stat_use[k]=+s.stat_use[k]||0});
+  s.hp=s.hp&&typeof s.hp==='object'?{cur:+s.hp.cur||0,max:+s.hp.max||10}:{cur:10,max:10};
+  s.mp=s.mp&&typeof s.mp==='object'?{cur:+s.mp.cur||0,max:+s.mp.max||(3+s.stats.Spellwork)}:{cur:3+s.stats.Spellwork,max:3+s.stats.Spellwork};
+  s.hp.cur=Math.max(0,Math.min(s.hp.max,s.hp.cur)); s.mp.cur=Math.max(0,Math.min(s.mp.max,s.mp.cur));
+  s.inventory=Array.isArray(s.inventory)?s.inventory.map(it=>typeof it==='string'?{name:it,grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1}:Object.assign({grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1},it)):[];
+  s.inventory.forEach(it=>{if(it.slot&&!SLOTS.includes(it.slot)&&it.slot!=='pocket')it.slot=null});
+  s.equipment=s.equipment&&typeof s.equipment==='object'?s.equipment:{};
+  s.spells=Array.isArray(s.spells)?s.spells:[]; s.reputation=s.reputation||{}; s.money=s.money&&typeof s.money==='object'?s.money:{g:0,s:0,k:0};
+  return s;
+}
+function itemByName(n){return (state.sheet.inventory||[]).find(i=>i.name===n)}
+function syncEquipment(){
+  const s=state.sheet, eq=s.equipment;
+  SLOTS.forEach(sl=>{if(eq[sl]&&!itemByName(eq[sl]))delete eq[sl]});
+  // auto-fill empty slots with the first fitting item, so starting kit shows up dressed
+  s.inventory.forEach(it=>{
+    if(!it.slot)return;
+    if(it.slot==='pocket'){if(!eq.pocket1&&eq.pocket2!==it.name)eq.pocket1=it.name;else if(!eq.pocket2&&eq.pocket1!==it.name)eq.pocket2=it.name;return}
+    if(!eq[it.slot])eq[it.slot]=it.name;
+  });
+}
+function bonuses(){const b={};STATS.forEach(k=>b[k]=0);SLOTS.forEach(sl=>{const it=state.sheet.equipment[sl]&&itemByName(state.sheet.equipment[sl]);if(it&&it.bonus&&it.bonus.stat&&STATS.includes(it.bonus.stat))b[it.bonus.stat]+=(+it.bonus.n||0)});return b}
+function effective(){const b=bonuses(),e={};STATS.forEach(k=>e[k]=state.sheet.stats[k]+b[k]);return e}
+function artMap(){const m={};SLOTS.forEach(sl=>{const it=state.sheet.equipment[sl]&&itemByName(state.sheet.equipment[sl]);m[sl]=it?(it.art||'none'):'none'});if(!state.sheet.equipment.wand&&itemByName('Wand'))m.wand='wand';return m}
+
+/* ---------- rendering ---------- */
+function renderGauges(){
+  const s=state&&state.sheet; if(!s)return;
+  const mk=(el,cur,max)=>{let h='';for(let i=0;i<Math.min(max,14);i++)h+='<i class="'+(i<cur?'on':'')+'"></i>';el.innerHTML=h;el.title=cur+'/'+max};
+  mk($('g-hp'),s.hp.cur,s.hp.max); mk($('g-mp'),s.mp.cur,s.mp.max);
+}
+function renderTurn(t,old,latest){
+  const d=document.createElement('div');d.className='turn'+(old?' old':'')+(latest?' latest':'');
+  let h='';
+  if(t.action && t.n>1 && !/^\[continue\]$/i.test(t.action)) h+='<p class="you">'+esc(t.action)+'</p>';
+  const blocks=String(t.scene||'').split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+  h+=blocks.map(b=>{const lines=b.split('\n').map(x=>x.trim()).filter(Boolean);const docLike=lines.length>1&&lines.every(l=>l.length<90&&!/[.!?”]$/.test(l))||(lines.length>1&&/^(HOGWARTS|MINISTRY|Dear |Yours)/.test(lines[0]));
+    if(docLike)return '<p class="doc">'+lines.map(l=>esc(l)).join('\n')+'</p>';
+    return lines.map(l=>'<p>'+esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')+'</p>').join('')}).join('');
+  if(latest){const i=h.indexOf('<p>');if(i>=0){const ch=h[i+3];if(ch&&!/["“‘'*]/.test(ch))h=h.slice(0,i)+'<p class="lede">'+h.slice(i+3)}}
+  const ch=Array.isArray(t.changes)&&t.changes.length?t.changes:(t.status?String(t.status).split(/\s·\s|\s\|\s/):[]);
+  if(ch.length) h+='<div class="status">'+ch.map(c=>{const s=String(c);const cls=/^forfeit/i.test(s)?'dn':/−|-\d|\bspent\b|\blost\b/.test(s)?'dn':/\+\d|\bgain|\brestored\b/.test(s)?'up':'';return '<span class="'+cls+'">'+esc(s.trim())+'</span>'}).join('')+'</div>';
+  d.innerHTML=h; return d;
+}
+function renderPresent(t){
+  const d=document.createElement('div');d.className='present';let any=false;
+  (t.present||[]).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=24;c.height=24;drawPortrait(c.getContext('2d'),sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Mrs|Mr|Madam|Sir|Dame|Professor)\s+/,'').split(' ')[0];l.title=n;w.appendChild(l);d.appendChild(w)});
+  (t.creatures||[]).forEach(k=>{any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=16;c.height=16;c.className='cr';drawCreature(c.getContext('2d'),k);w.appendChild(c);const l=document.createElement('span');l.textContent=k;w.appendChild(l);d.appendChild(w)});
+  if(!any)d.hidden=true; return d;
+}
+function deriveFocus(t){
+  if(t.creatures&&t.creatures.length)return {type:'creature',key:t.creatures[0]};
+  if(t.present&&t.present.length)return {type:'person',key:t.present[0]};
+  return null;
+}
+function renderAll(){
+  log.innerHTML='';
+  if(!turns.length){log.innerHTML='<div class="empty">Nothing written yet. Tell me what you do.</div>';return}
+  const show=turns.slice(-4);
+  if(show.length>1){const det=document.createElement('details');det.className='earlier';const sm=document.createElement('summary');sm.textContent='EARLIER · '+(show.length-1)+(show.length-1===1?' SCENE':' SCENES');det.appendChild(sm);show.slice(0,-1).forEach(t=>det.appendChild(renderTurn(t,true,false)));log.appendChild(det)}
+  const lastT=show[show.length-1]; log.appendChild(renderPresent(lastT)); log.appendChild(renderTurn(lastT,false,true));
+  const last=turns[turns.length-1];
+  setFocus(last.focus||deriveFocus(last)); paint(last.tag,last.tod);
+  $('cap-place').textContent=(state&&state.sheet&&state.sheet.location)||'';
+  $('cap-date').textContent=(state&&state.sheet&&state.sheet.date)||'';
+  renderGauges(); renderOptions(last);
+}
+function renderOptions(t){
+  optsEl.innerHTML='';
+  const kind=t.kind||((t.options||[]).length?'choice':'narrative');
+  if(kind==='narrative'&&!t.ask){const b=document.createElement('button');b.type='button';b.className='opt cont';b.innerHTML='<span class="n">›</span><span class="t">Continue</span>';b.addEventListener('click',()=>act('[continue]'));optsEl.appendChild(b);$('lead').textContent='';input.placeholder='Or do something else…';return}
+  if(kind==='crossroads'){const w=document.createElement('div');w.className='cross';w.textContent='A crossroads. Choose one; the others close behind you.';optsEl.appendChild(w)}
+  (t.options||[]).slice(0,5).forEach((o,i)=>{
+    const txt=typeof o==='string'?o:String(o.text||''); const st=typeof o==='object'&&o&&o.stat&&STATS.includes(o.stat)?o.stat:null;
+    const b=document.createElement('button');b.type='button';b.className='opt';
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+esc(txt)+'</span>'+(st?'<span class="s">'+st.toUpperCase()+'</span>':'');
+    b.addEventListener('click',()=>act(txt));optsEl.appendChild(b)});
+  $('lead').textContent=t.ask?'SAY IT IN YOUR OWN WORDS':'WHAT DO YOU DO?';
+  input.placeholder=t.ask?'Say it in your own words…':'Or tell me what you do…';
+}
+function scrollTo(el){requestAnimationFrame(()=>{if(el)el.scrollIntoView({block:'start',behavior:reduce?'auto':'smooth'})})}
+function scrollEnd(){scrollTo(log.lastElementChild)}
+function setBusy(on,txt){busy.hidden=!on;if(txt)busyText.textContent=txt;goBtn.disabled=on;optsEl.querySelectorAll('button').forEach(b=>b.disabled=on)}
+
+/* ---------- live text while the reply streams ---------- */
+function partialScene(raw){
+  // find "scene": "..." in a partial JSON string and decode what we have so far
+  const m=raw.match(/"scene"\s*:\s*"/); if(!m)return null;
+  let i=m.index+m[0].length, out='', esc=false;
+  for(;i<raw.length;i++){const ch=raw[i];
+    if(esc){ if(ch==='n')out+='\n'; else if(ch==='t')out+='\t'; else if(ch==='u'){const hex=raw.slice(i+1,i+5); if(/^[0-9a-fA-F]{4}$/.test(hex)){out+=String.fromCharCode(parseInt(hex,16)); i+=4} } else out+=ch; esc=false; continue }
+    if(ch==='\\'){esc=true;continue}
+    if(ch==='"')break;
+    out+=ch }
+  return out;
+}
+function renderLive(el,text){
+  const blocks=String(text||'').split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
+  el.innerHTML=blocks.map(b=>b.split('\n').map(l=>'<p>'+esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')+'</p>').join('')).join('')+'<p class="cursor">▍</p>';
+}
+
+/* ---------- the GM call ---------- */
+let gm=null;
+async function loadGM(){
+  if(gm)return gm;
+  const ids=['prompt','series','year1','adaptation'];
+  const snaps=await Promise.all(ids.map(k=>db.doc('gm/'+k).get()));
+  gm={};ids.forEach((k,i)=>{gm[k]=snaps[i].exists?String(snaps[i].data().text||''):''});
+  return gm;
+}
+function buildPrompt(action,dice){
+  const g=gm, len=(state.prefs&&state.prefs.length)||'long';
+  const recent=turns.slice(-8).map(t=>'PLAYER: '+(t.action||'(start)')+'\nGM: '+t.scene+(t.changes&&t.changes.length?'\n[changes: '+t.changes.join('; ')+']':'')).join('\n\n---\n\n');
+  const chron=(state.chronicle||[]).slice(-60).map(l=>'- '+l).join('\n');
+  const eff=effective(), eq=state.sheet.equipment;
+  return [
+'You are the Game Master of a running game. Everything below is your standing material. The player sees only your JSON reply, rendered as prose, plus a character screen the page draws from the sheet you return.',
+'=== GM INSTRUCTIONS ===\n'+g.prompt,
+'=== SERIES BIBLE (never reveal) ===\n'+g.series,
+'=== YEAR BIBLE (never reveal) ===\n'+g.year1,
+'=== ADAPTATIONS AND STANDING RULES ===\n'+g.adaptation,
+'=== CURRENT STATE ===\nCharacter sheet (base values): '+JSON.stringify(state.sheet)+
+'\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+
+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
+'=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
+'=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
+'=== DICE ===\nTrue random d20 results for this turn, use them in this order for any checks and show the arithmetic in one line inside the scene ("Nerve check: 14 + 5 = 19 against 16. He makes it."): '+dice.join(', ')+'. Do not roll unless the outcome is uncertain and matters. Add practice to the stat used (section 5b).',
+'=== PLAYER ACTION ===\n'+action,
+'=== OUTPUT ===\nReply with ONLY one JSON object, nothing before or after it. Put "kind" and then "scene" FIRST in the object, before every other field, so the prose can be shown while the rest is still being written. Shape:\n'+
+'{"kind": "narrative | choice | crossroads (see Pacing)",\n'+
+' "scene": "the prose; paragraphs separated by \\n\\n; dialogue on its own lines; no markdown, no headers; *asterisks* only for a single emphasised word or a written note",\n'+
+' "changes": ["one short line per number that moved, with cause, e.g. \\"Nerve practice +2 (the drainpipe)\\", \\"HP −2 (Stinging Hex)\\", \\"Gryffindor +5 (Haverstock)\\", \\"3 Sickles spent (Honeydukes)\\"; empty array if nothing moved"],\n'+
+' "options": [{"text":"a choice","stat":"Nerve"}, ... 3 to 5 for a choice or crossroads page, different in kind (bold, careful, social, sneaky); stat is the stat the choice leans on, or null; EMPTY for a narrative page],\n'+
+' "ask": false,\n'+
+' "tag": "one of: '+TAGS+'",\n'+
+' "tod": "day or dusk or night",\n'+
+' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"text":"for anything readable (a letter, a note, a ticket, a page, a label) the full text as Robert would read it, with line breaks; omit for other items"}],"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
+' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
+' "present": ["names of the people in this scene, known or new"],\n'+
+' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
+' "focus": {"type":"item|creature|person|none","key":"what this turn is really about, shown as a close-up beside the painting: an item key from this list: '+FOCUS_KEYS.join(', ')+'; or a creature key; or the exact name of a person in cast; pick the thing the player will remember from this scene; change it every turn"},\n'+
+' "progress": {"beats_done":[],"clues_planted":[],"reveals_spent":[],"branches":[],"adaptations":[],"open_threads":[],"notes":{"suspicions":[],"clues":[],"aims":[]}},\n'+
+' "log": "one line summarising this turn for the chronicle"}\n'+
+'Set "ask" true and leave options empty only when you want the player to answer in his own words. The notes in progress are what ROBERT knows and suspects, written for him to read, never GM knowledge. Bracketed player commands ([skip], [harder], [easier], [bible check]) are out of character: answer them briefly in "scene" and keep the story where it was.'
+  ].join('\n\n');
+}
+async function act(text){
+  text=String(text||'').trim(); if(!text||!sampleFn||busy.hidden===false)return;
+  input.value='';
+  if(speaking)stopSpeaking();
+  V.unlock(); if(window.HOG.settings.autoRead)V.preload();
+  const lower=text.toLowerCase();
+  if(lower==='[sheet]')return showSheet();
+  if(lower==='[notes]')return showNotes();
+  if(lower==='[people]')return showPeople();
+  if(lower==='[recap]')return showRecap();
+  if(lower==='[save]')return saveBlock();
+  if(lower==='[long]'||lower==='[short]'||lower==='[standard]'){state.prefs={length:lower.slice(1,-1)};$('b-len').textContent='Length: '+state.prefs.length;await saveState();return}
+  await loadGM();
+  const dice=[d20(),d20(),d20()];
+  const pending=document.createElement('div');pending.className='turn';pending.innerHTML=/^\[continue\]$/i.test(text)?'':'<p class="you">'+esc(text)+'</p>';log.appendChild(pending);
+  optsEl.innerHTML='';setBusy(true,'The quill is thinking…');scrollTo(pending);
+  const live=document.createElement('div');live.className='live';live.hidden=true;log.appendChild(live);let liveShown=false;
+  ctl=new AbortController();
+  let out;
+  try{
+    out=await sampleFn.json(buildPrompt(text,dice),{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}renderLive(live,sc)}else{busyText.textContent='Writing…'}}catch(e){}}});
+  }catch(e){
+    setBusy(false);pending.remove();live.remove();
+    const msg={cancelled:'Stopped.',not_granted:'This page needs permission to use Claude. Reopen it and allow it when asked.',rate_limited:'Claude is busy or your usage limit is reached. Try again in a while.',invalid_json:'The reply came back malformed. Try the action again.',refused:'Claude declined that one. Try a different action.'}[e.code]||'Something went wrong on the way to Hogwarts. Try again.';
+    if(e.code!=='cancelled'){const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">'+esc(msg)+'</p>';log.appendChild(d)}
+    if(turns.length)renderOptions(turns[turns.length-1]);scrollEnd();return;
+  }
+  if(!out||typeof out!=='object'||!out.scene){setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
+  const n=(state.n||0)+1;
+  const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
+  if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment()}
+  if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
+  if(out.progress&&typeof out.progress==='object')state.progress=out.progress;
+  state.chronicle=(state.chronicle||[]).concat([String(out.log||t.scene.slice(0,120))]).slice(-400);
+  state.n=n; state.updated=t.at;
+  Object.keys(state.cast||{}).forEach(k=>{const rep=state.sheet.reputation||{};const key=Object.keys(rep).find(r=>k.includes(r)||r.includes(k.split(' ').slice(-1)[0]));if(key)state.cast[k].relationship=rep[key]});
+  turns.push(t); pending.remove(); live.remove(); setBusy(false); renderAll(); scrollEnd();
+  if(window.HOG.settings.autoRead&&!/^\[/.test(text)){speakCurrent()}
+  try{$('saved').textContent='SAVING…';await db.doc('turns/'+tid(n)).set(t);await saveState()}catch(e){$('saved').textContent='NOT SAVED';const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">That turn could not be saved. If you reload, it will be lost.</p>';log.appendChild(d)}
+}
+let saving=null;
+async function saveState(){if(saving)await saving.catch(()=>{});saving=db.doc('game/state').set(JSON.parse(JSON.stringify(state)));try{await saving;$('saved').textContent='SAVED'}catch(e){$('saved').textContent='NOT SAVED ('+(e&&e.code||'error')+')';throw e}return saving}
+
+/* ---------- character screen ---------- */
+function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false;$('modal').querySelector('.card').scrollTop=0}
+$('m-close').addEventListener('click',()=>{$('modal').hidden=true});
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidden=true});
+function gauge(cls,label,cur,max){let c='';for(let i=0;i<max;i++)c+='<i class="'+(i<cur?'on':'')+'"></i>';return '<div class="gauge '+cls+'"><div class="lab"><span>'+label+'</span><span>'+cur+' / '+max+'</span></div><div class="trk">'+c+'</div></div>'}
+function showSheet(){
+  if(!state)return; const s=state.sheet, b=bonuses(), eff=effective(); state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'}; const look=state.look;
+  const stats=STATS.map(k=>{let cells='';for(let i=0;i<10;i++)cells+='<i class="'+(i<s.stats[k]?'on':(i<eff[k]?'bn':''))+'"></i>';let pr='';for(let i=0;i<10;i++)pr+='<i class="'+(i<s.practice[k]?'on':'')+'"></i>';
+    return '<div class="stat"><span class="nm">'+k+'</span><span class="bar2">'+cells+'</span><span class="num">'+eff[k]+(b[k]?' <b>+'+b[k]+'</b>':'')+'</span><span class="pr" title="practice '+s.practice[k]+'/10">'+pr+'</span></div>'}).join('');
+  const slots=SLOTS.map(sl=>{const it=s.equipment[sl]&&itemByName(s.equipment[sl]);return '<button type="button" class="slot" data-slot="'+sl+'"><span class="sn">'+sl.replace(/\d/,' $&').toUpperCase()+'</span><span class="sl-row">'+(it?'<canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas>':'')+'<span class="it '+(it?'':'e')+'">'+(it?esc(it.name)+(it.bonus&&it.bonus.stat?' · +'+it.bonus.n+' '+it.bonus.stat:''):'empty')+'</span></span></button>'}).join('');
+  const inv=s.inventory.length?s.inventory.map((it,i)=>{const eqd=SLOTS.some(sl=>s.equipment[sl]===it.name);const canEq=!!it.slot;const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty/i.test(it.name)||(it.qty>1&&!it.slot);
+    return '<div class="item"><canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas><div class="in" data-open="'+i+'" role="button" tabindex="0"><div class="nm">'+esc(it.name)+(it.qty>1?' ×'+it.qty:'')+(it.bonus&&it.bonus.stat?' <span class="bn">+'+esc(it.bonus.n)+' '+esc(it.bonus.stat)+'</span>':'')+'</div>'+(it.note?'<div class="nt">'+esc(it.note)+'</div>':'')+'</div><span class="gr '+esc(it.grade)+'">'+esc(it.grade).toUpperCase()+'</span>'+
+      (canEq?'<button type="button" class="mini" data-eq="'+i+'">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable?'<button type="button" class="mini" data-use="'+i+'">Use</button>':'')+'</div>'}).join(''):'<p class="note">Nothing yet.</p>';
+  const spells=s.spells.length?s.spells.map(x=>esc(x.name)+' <span class="note">('+esc(x.level)+')</span>').join(', '):'none yet';
+  const rep=Object.entries(s.reputation).map(([k,v])=>esc(k)+' '+(v>0?'+':'')+esc(v)).join(' · ')||'—';
+  const money=(s.money.g?s.money.g+' G ':'')+(s.money.s?s.money.s+' S ':'')+(s.money.k?s.money.k+' K':'')||'nothing';
+  const sw=DOLL.skins.map((c,i)=>'<button type="button" class="sw '+(look.skin===i?'on':'')+'" data-skin="'+i+'" style="background:'+c+'" title="skin"></button>').join('');
+  const hs='<select id="l-style">'+DOLL.hairStyles.map(h=>'<option '+(look.hair_style===h?'selected':'')+'>'+h+'</option>').join('')+'</select>';
+  const hc='<select id="l-colour">'+Object.keys(DOLL.hairColours).map(h=>'<option value="'+h+'" '+(look.hair_colour===h?'selected':'')+'>'+h.replace('_',' ')+'</option>').join('')+'</select>';
+  openModal('CHARACTER',
+   '<div class="hero"><canvas id="doll" width="32" height="48"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
+   '<div class="k">STATS · gold = equipment bonus · thin line = practice toward the next point</div>'+stats+
+   '<div class="grid"><div class="wide"><div class="k">EQUIPMENT · tap a slot to unequip</div><div class="slots">'+slots+'</div></div>'+
+   '<div class="wide"><div class="k">INVENTORY</div><div class="inv">'+inv+'</div></div>'+
+   '<div><div class="k">MONEY</div><div class="v">'+money+'</div></div><div><div class="k">HOUSE POINTS</div><div class="v">'+esc(s.house_points==null?'—':s.house_points)+'</div></div>'+
+   '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
+   '<div class="wide"><div class="k">SPELLS</div><div class="v">'+spells+'</div></div>'+
+   '<div class="wide"><div class="k">REPUTATION</div><div class="v">'+rep+'</div></div>'+
+   '<div class="wide"><div class="k">LOOK · tap a skin tone, pick hair</div><div class="look">'+sw+'</div><div class="look" style="margin-top:8px"><label class="note" style="font-style:normal">Hair style '+hs+'</label><label class="note" style="font-style:normal">Colour '+hc+'</label></div></div></div>');
+  drawDoll($('doll').getContext('2d'),look,artMap(),s.house);
+  $('m-body').querySelectorAll('canvas.ic').forEach(c=>drawIcon(c.getContext('2d'),c.dataset.ico));
+  $('m-body').querySelectorAll('[data-slot]').forEach(el=>el.addEventListener('click',()=>{const sl=el.dataset.slot;if(s.equipment[sl]){delete s.equipment[sl];const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}}));
+  $('m-body').querySelectorAll('[data-eq]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.eq];const eqd=SLOTS.find(sl=>s.equipment[sl]===it.name);if(eqd)delete s.equipment[eqd];else{let sl=it.slot;if(sl==='pocket')sl=!s.equipment.pocket1?'pocket1':'pocket2';s.equipment[sl]=it.name}const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}));
+  $('m-body').querySelectorAll('[data-use]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.use];$('modal').hidden=true;act('Robert uses the '+it.name+'.')}));
+  $('m-body').querySelectorAll('[data-open]').forEach(el=>{const go=()=>showItem(+el.dataset.open);el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
+  const setLook=(patch)=>{state.look=Object.assign({},state.look||look,patch);const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})};
+  $('m-body').querySelectorAll('[data-skin]').forEach(el=>el.addEventListener('click',()=>setLook({skin:+el.dataset.skin})));
+  $('l-style').addEventListener('change',e=>setLook({hair_style:e.target.value}));
+  $('l-colour').addEventListener('change',e=>setLook({hair_colour:e.target.value}));
+}
+function showItem(i){
+  const s=state.sheet, it=s.inventory[i]; if(!it)return;
+  const eqd=SLOTS.find(sl=>s.equipment[sl]===it.name);
+  const meta=['<span class="'+(it.grade==='prized'||it.grade==='rare'?'b':'')+'">'+esc(it.grade).toUpperCase()+'</span>']
+    .concat(it.slot?['<span>'+esc(it.slot).toUpperCase()+'</span>']:[])
+    .concat(it.bonus&&it.bonus.stat?['<span class="b">+'+esc(it.bonus.n)+' '+esc(it.bonus.stat).toUpperCase()+'</span>']:[])
+    .concat(it.qty>1?['<span>×'+esc(it.qty)+'</span>']:[]).join('');
+  const text=it.text?'<div class="itemtext">'+esc(it.text)+'</div>':'';
+  const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty/i.test(it.name)||(it.qty>1&&!it.slot);
+  openModal('ITEM','<div class="itemview"><canvas id="iv" width="12" height="12"></canvas><div><div class="nm">'+esc(it.name)+'</div><div class="meta">'+meta+'</div><div class="note">'+esc(it.note||'')+'</div></div></div>'+text+
+    '<div class="row">'+(it.slot?'<button type="button" class="mini" id="iv-eq">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable?'<button type="button" class="mini" id="iv-use">Use</button>':'')+'<button type="button" class="mini" id="iv-look">Look closer</button><button type="button" class="mini" id="iv-back">Back to character</button></div>');
+  drawIcon($('iv').getContext('2d'),it.art&&it.art!=='none'?it.art:(it.icon||'none'));
+  const eq=$('iv-eq'); if(eq)eq.addEventListener('click',()=>{const e2=SLOTS.find(sl=>s.equipment[sl]===it.name);if(e2)delete s.equipment[e2];else{let sl=it.slot;if(sl==='pocket')sl=!s.equipment.pocket1?'pocket1':'pocket2';s.equipment[sl]=it.name}saveState().catch(()=>{});showItem(i)});
+  const use=$('iv-use'); if(use)use.addEventListener('click',()=>{$('modal').hidden=true;act('Robert uses the '+it.name+'.')});
+  $('iv-look').addEventListener('click',()=>{$('modal').hidden=true;act('[Robert looks closely at the '+it.name+'. Describe it in detail, and if it has writing on it, give the writing in full.]')});
+  $('iv-back').addEventListener('click',showSheet);
+}
+function showSettings(){
+  const S=window.HOG.settings, vo=window.HOG.voice.VOICES;
+  openModal('SETTINGS','<div class="settings">'+
+   '<div class="k">MODEL</div><select id="st-model"><option value="claude-opus-5-5">Opus 5.5 (best writing, slowest)</option><option value="claude-sonnet-5-5">Sonnet 5.5 (faster, cheaper)</option></select>'+
+   '<label class="chk"><input type="checkbox" id="st-think"> Let the GM think before writing (better plotting, slower first word)</label>'+
+   '<div class="k">NARRATOR VOICE</div><select id="st-voice">'+Object.entries(vo).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'+
+   '<label class="chk"><input type="checkbox" id="st-auto"> Read each new scene aloud</label>'+
+   '<div class="k">READING SPEED</div><input id="st-rate" type="range" min="0.8" max="1.3" step="0.05">'+
+   '<div class="vstat" id="vstat"></div>'+
+   '<div class="k">API KEY</div><input id="st-key" type="password" autocomplete="off">'+
+   '<div class="row"><button type="button" class="mini" id="st-test">Test voice</button><button type="button" class="mini" id="st-export">Export save</button><button type="button" class="mini" id="st-import">Import save</button><button type="button" class="mini" id="st-reset">Start over</button></div>'+
+   '<p class="note">Saves live on this phone. Export before switching devices.</p></div>');
+  $('st-model').value=S.model; $('st-think').checked=!!S.thinking; $('st-voice').value=S.voice; $('st-auto').checked=!!S.autoRead; $('st-rate').value=S.rate||1; $('st-key').value=S.apiKey||'';
+  const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();window.HOG.saveSettings()};
+  ['st-model','st-think','st-voice','st-auto','st-rate','st-key'].forEach(id=>$(id).addEventListener('change',save));
+  $('st-test').addEventListener('click',()=>{save();window.HOG.voice.speak('The owl arrived at a quarter past seven, which Graham Thunder considered unprofessional.')});
+  $('st-export').addEventListener('click',()=>{const txt=window.HOG.exportSave();navigator.clipboard.writeText(txt).then(()=>{$('st-export').textContent='Copied'}).catch(()=>{openModal('EXPORT','<pre class="save">'+esc(txt)+'</pre>')})});
+  $('st-import').addEventListener('click',()=>{openModal('IMPORT SAVE','<textarea id="imp" style="width:100%;height:160px;font:14px monospace"></textarea><div class="row"><button class="go" id="imp-go" type="button" style="padding:10px 14px">Import</button></div>');$('imp-go').addEventListener('click',()=>{try{window.HOG.importSave($('imp').value);location.reload()}catch(e){alert('Could not read that save')}})});
+  $('st-reset').addEventListener('click',()=>{openModal('START OVER','<p>This wipes Robert’s save on this phone and begins again from the letter. The story documents stay.</p><div class="row"><button class="go" id="rs-go" type="button" style="padding:10px 14px">Yes, start over</button></div>');$('rs-go').addEventListener('click',async()=>{window.HOG.resetGame();await seedInitial(true);location.reload()})});
+  const vs=window.HOG.voice; $('vstat').textContent=vs.status==='ready'?'Narrator ready':vs.statusMsg;
+}
+function showNotes(){
+  const p=(state&&state.progress)||{}, n=p.notes||{};
+  const list=(arr,empty)=>Array.isArray(arr)&&arr.length?'<ul class="plain">'+arr.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">'+empty+'</p>';
+  openModal('ROBERT’S NOTES','<div class="grid"><div class="wide"><div class="k">WHAT HE SUSPECTS</div>'+list(n.suspicions,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE HAS NOTICED</div>'+list(n.clues,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE MEANS TO DO</div>'+list(n.aims,'Nothing decided.')+'</div><div class="wide"><div class="k">OPEN THREADS</div>'+list(p.open_threads,'None.')+'</div></div>');
+}
+function showPeople(){
+  const cast=(state&&state.cast)||{}; const names=Object.keys(cast);
+  if(!names.length)return openModal('PEOPLE','<p class="note">Nobody yet. They arrive as you meet them.</p>');
+  openModal('PEOPLE',names.map(n=>{const sp=cast[n];return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(sp.relationship!=null&&sp.relationship!==''?'<span class="rel">'+(sp.relationship>0?'+':'')+esc(sp.relationship)+'</span>':'')+'</div>'}).join(''));
+  $('m-body').querySelectorAll('canvas[data-who]').forEach(c=>drawPortrait(c.getContext('2d'),cast[c.dataset.who]));
+}
+function showRecap(){const c=(state&&state.chronicle)||[];openModal('RECAP',c.length?'<ol style="padding-left:1.2em;margin:0">'+c.slice(-12).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ol>':'<p class="note">Nothing yet.</p>')}
+async function saveBlock(){
+  if(!sampleFn||!state)return;
+  openModal('SAVE BLOCK','<p class="note">Writing the Save Block…</p>');
+  try{
+    const {text}=await sampleFn('Write a Save Block for a text adventure, under 400 words, plain text, with these headings: Character sheet; In-story date; Bible progress; Adaptations; Open threads (three lines); Last scene (two lines). Use only the data below.\n\nSHEET: '+JSON.stringify(state.sheet)+'\nPROGRESS: '+JSON.stringify(state.progress||{})+'\nCHRONICLE (recent): '+(state.chronicle||[]).slice(-30).join(' | ')+'\nLAST SCENE: '+(turns.length?turns[turns.length-1].scene.slice(0,1200):''),{modelTier:'default',cache:false});
+    const id='sv'+Date.now();
+    openModal('SAVE BLOCK','<pre class="save" id="'+id+'">'+esc(text)+'</pre><button class="go" type="button" id="'+id+'c" style="padding:10px 14px">Copy</button> <span class="note">Paste it into the Project files if you ever play in chat.</span>');
+    $(id+'c').addEventListener('click',()=>{const el=$(id);navigator.clipboard.writeText(el.textContent).then(()=>{$(id+'c').textContent='Copied'}).catch(()=>{const rg=document.createRange();rg.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(rg)})});
+  }catch(e){openModal('SAVE BLOCK','<p class="note">Could not write it right now ('+esc(e.code||'error')+'). The game is saved anyway; this block is only for playing in chat.</p>')}
+}
+
+/* ---------- narrator ---------- */
+const V=window.HOG.voice; let speaking=false;
+function stopSpeaking(){V.stop();speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='Listen'}
+async function speakCurrent(){
+  if(!turns.length)return; if(speaking){stopSpeaking();return}
+  speaking=true;$('b-listen').classList.add('on');$('b-listen').textContent='Stop';
+  await V.speak(narrationText(turns[turns.length-1]));
+  speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='Listen';
+}
+function narrationText(t){return String(t.scene||'').split(/\n\s*\n/).map(b=>b.replace(/\*/g,'').trim()).filter(Boolean).join('\n\n')}
+$('b-listen').hidden=false; $('b-listen').addEventListener('click',speakCurrent);
+V.onStatus((s,m)=>{const el=$('vstat');if(el)el.textContent=(s==='loading'||s==='error')?m:(s==='ready'?'Narrator ready':'')});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking)stopSpeaking()});
+
+/* ---------- wiring ---------- */
+form.addEventListener('submit',e=>{e.preventDefault();act(input.value)});
+$('b-stop').addEventListener('click',()=>{if(ctl)ctl.abort()});
+$('b-sheet').addEventListener('click',showSheet);
+$('b-notes').addEventListener('click',showNotes);
+$('b-settings').addEventListener('click',showSettings);
+$('b-people').addEventListener('click',showPeople);
+$('b-recap').addEventListener('click',showRecap);
+
+$('b-len').addEventListener('click',async()=>{if(!state)return;const order=['long','standard','short'];const cur=(state.prefs&&state.prefs.length)||'long';const nx=order[(order.indexOf(cur)+1)%3];state.prefs={length:nx};$('b-len').textContent='Length: '+nx;try{await saveState()}catch(e){}});
+
+async function seedInitial(fresh){
+  const bundle=JSON.parse(localStorage.getItem('hog.bundle')||'null'); if(!bundle)return;
+  if(fresh){await db.doc('game/state').set(bundle.fresh.state);for(const t of bundle.fresh.turns)await db.doc('turns/'+tid(t.n)).set(t);return}
+  const s=await db.doc('game/state').get();
+  if(!s.exists){await db.doc('game/state').set(bundle.save.state);for(const t of bundle.save.turns)await db.doc('turns/'+tid(t.n)).set(t)}
+}
+async function setupFlow(){
+  const S=window.HOG.settings;
+  const haveGM=!!localStorage.getItem('hog.gm'), haveKey=!!S.apiKey;
+  if(haveGM&&haveKey)return true;
+  $('setup').hidden=false; $('s-key').value=S.apiKey||''; if(haveGM){$('s-pass').parentElement.querySelectorAll('#s-pass').forEach(e=>e.hidden=true)}
+  return new Promise(res=>{
+    $('s-go').addEventListener('click',async()=>{
+      $('s-err').textContent='';
+      const key=$('s-key').value.trim(); if(!/^sk-ant-/.test(key)){$('s-err').textContent='That does not look like an Anthropic API key.';return}
+      if(!haveGM){
+        const pass=$('s-pass').value;
+        try{const r=await fetch('story.enc.json');const enc=await r.json();const plain=await window.HOG.decryptBundle(enc,pass);
+          localStorage.setItem('hog.gm',JSON.stringify(plain.gm)); localStorage.setItem('hog.bundle',JSON.stringify({save:plain.save,fresh:plain.fresh}));
+        }catch(e){$('s-err').textContent='Wrong passphrase.';return}
+      }
+      S.apiKey=key; window.HOG.saveSettings(); $('setup').hidden=true; res(true);
+    });
+  });
+}
+async function boot(){
+  await setupFlow();
+  [db,sampleFn]=await Promise.all([claude.use('db'),claude.use('sample')]);
+  await seedInitial(false);
+  try{
+    const s=await db.doc('game/state').get();
+    state=s.exists?JSON.parse(JSON.stringify(s.data())):{n:0,sheet:{},progress:{},chronicle:[],prefs:{length:'long'}};
+    state.sheet=normSheet(state.sheet); syncEquipment();
+    state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'};
+    $('b-len').textContent='Length: '+((state.prefs&&state.prefs.length)||'long');
+    const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
+    turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
+    renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';
+  }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}
+}
+boot();
+})();
+</script>
+</body>
+</html>
