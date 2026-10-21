@@ -916,7 +916,7 @@ async function setupFlow(){
       $('s-err').textContent='';
       const key=haveKey?S.apiKey:$('s-key').value.trim(); if(!/^sk-ant-/.test(key)){$('s-err').textContent='That does not look like an Anthropic API key.';return}
       if(needPass){
-        const pass=$('s-pass').value.trim();
+        const pass=$('s-pass').value.trim().toLowerCase();
         try{if(!enc)enc=await fetchBundle();storeBundle(await window.HOG.decryptBundle(enc,pass),enc,pass)}
         catch(e){$('s-err').textContent=enc?'Wrong passphrase.':'Could not load the story file. Check the connection and try again.';return}
       }
