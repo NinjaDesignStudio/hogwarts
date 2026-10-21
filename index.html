@@ -186,6 +186,16 @@ details.earlier .turn + .turn::before{display:none}
 .item .bn{font-family:var(--display);font-size:6.5px;color:var(--gold)}
 .item .gr{font-family:var(--display);font-size:6px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);padding:2px 4px;border-radius:2px}
 .item .gr.prized{color:var(--gold);border-color:var(--gold)} .item .gr.rare{color:var(--accent);border-color:var(--accent)}
+.item .bn.off{text-decoration:line-through;color:var(--muted)}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
+.tags:empty{display:none}
+.tag{font-family:var(--display);font-size:5.5px;letter-spacing:.06em;padding:3px 4px;border-radius:2px;border:1px solid var(--line);color:var(--muted)}
+.tag.t-quest{color:var(--gold);border-color:var(--gold)} .tag.t-contraband{color:var(--accent);border-color:var(--accent)} .tag.t-perishable{color:var(--good);border-color:var(--good)} .tag.t-worn{color:var(--muted)} .tag.t-broken{color:var(--hp);border-color:var(--hp)}
+.pockets{display:flex;gap:6px;flex-wrap:wrap}
+.pockets:empty{display:none}
+.pk{display:flex;gap:6px;align-items:center;font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:5px 8px}
+.pk canvas{width:20px;height:20px;image-rendering:pixelated}
+.pk button{font-family:var(--display);font-size:6.5px;background:transparent;border:1px solid var(--line);border-radius:2px;color:var(--accent);padding:4px 6px;cursor:pointer}
 .look{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
 .sw.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--accent)}
@@ -211,12 +221,14 @@ ul.plain{margin:0;padding-left:1.1em}
   </main>
   <footer class="dock"><div class="inner">
     <div class="lead" style="display:flex;justify-content:space-between"><span id="lead">WHAT DO YOU DO?</span><span class="saved" id="saved"></span></div>
+    <div class="pockets" id="pockets"></div>
     <div id="options"></div>
     <form id="free"><input id="action" type="text" autocomplete="off" placeholder="Or tell me what you do…"><button class="go" id="b-go" type="submit">Go</button></form>
     <div class="bar">
       <button type="button" id="b-sheet">Character</button>
       <button type="button" id="b-notes">Notes</button>
       <button type="button" id="b-people">People</button>
+      <button type="button" id="b-biz" hidden>Business</button>
       <button type="button" id="b-recap">Recap</button>
       <span class="sp"></span>
       <button type="button" id="b-settings">Settings</button>
@@ -311,7 +323,11 @@ function normSheet(s){
   s.mp=s.mp&&typeof s.mp==='object'?{cur:+s.mp.cur||0,max:+s.mp.max||(3+s.stats.Spellwork)}:{cur:3+s.stats.Spellwork,max:3+s.stats.Spellwork};
   s.hp.cur=Math.max(0,Math.min(s.hp.max,s.hp.cur)); s.mp.cur=Math.max(0,Math.min(s.mp.max,s.mp.cur));
   s.inventory=Array.isArray(s.inventory)?s.inventory.map(it=>typeof it==='string'?{name:it,grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1}:Object.assign({grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1},it)):[];
-  s.inventory.forEach(it=>{if(it.slot&&!SLOTS.includes(it.slot)&&it.slot!=='pocket')it.slot=null});
+  s.inventory.forEach(it=>{if(it.slot&&!SLOTS.includes(it.slot)&&it.slot!=='pocket')it.slot=null;
+    if(!['good','worn','broken'].includes(it.condition))it.condition='good';
+    if(!Array.isArray(it.tags))it.tags=[]; it.tags=it.tags.filter(t=>['quest','contraband','perishable','gift','stock'].includes(t));
+    if(!['on','trunk'].includes(it.where))it.where=null;});
+  s.business=s.business&&typeof s.business==='object'?s.business:null;
   s.equipment=s.equipment&&typeof s.equipment==='object'?s.equipment:{};
   s.spells=Array.isArray(s.spells)?s.spells:[]; s.reputation=s.reputation||{}; s.money=s.money&&typeof s.money==='object'?s.money:{g:0,s:0,k:0};
   return s;
@@ -327,7 +343,15 @@ function syncEquipment(){
     if(!eq[it.slot])eq[it.slot]=it.name;
   });
 }
-function bonuses(){const b={};STATS.forEach(k=>b[k]=0);SLOTS.forEach(sl=>{const it=state.sheet.equipment[sl]&&itemByName(state.sheet.equipment[sl]);if(it&&it.bonus&&it.bonus.stat&&STATS.includes(it.bonus.stat))b[it.bonus.stat]+=(+it.bonus.n||0)});return b}
+function syncWhere(){
+  const s=state.sheet, eq=s.equipment;
+  s.inventory.forEach(it=>{const equipped=SLOTS.some(sl=>eq[sl]===it.name); if(equipped){it.where='on';return}
+    if(it.where==='on'&&(!it.slot||it.slot==='pocket')){const free=!eq.pocket1?'pocket1':(!eq.pocket2?'pocket2':null); if(free){eq[free]=it.name;return} it.where='trunk';return}
+    if(!it.where||it.where==='on')it.where='trunk';});
+}
+const TRUNK_TAGS=['dorm','common_room','kitchen','street','train','platform'];
+function trunkHere(){const t=turns.length?turns[turns.length-1].tag:'';return TRUNK_TAGS.includes(t)}
+function bonuses(){const b={};STATS.forEach(k=>b[k]=0);SLOTS.forEach(sl=>{const it=state.sheet.equipment[sl]&&itemByName(state.sheet.equipment[sl]);if(it&&it.bonus&&it.bonus.stat&&STATS.includes(it.bonus.stat)&&it.condition!=='broken')b[it.bonus.stat]+=(+it.bonus.n||0)});return b}
 function effective(){const b=bonuses(),e={};STATS.forEach(k=>e[k]=state.sheet.stats[k]+b[k]);return e}
 function artMap(){const m={};SLOTS.forEach(sl=>{const it=state.sheet.equipment[sl]&&itemByName(state.sheet.equipment[sl]);m[sl]=it?(it.art||'none'):'none'});if(!state.sheet.equipment.wand&&itemByName('Wand'))m.wand='wand';return m}
 
@@ -375,9 +399,16 @@ function renderAll(){
   setFocus(last.focus||deriveFocus(last)); paint(last.tag,last.tod);
   $('cap-place').textContent=(state&&state.sheet&&state.sheet.location)||'';
   $('cap-date').textContent=(state&&state.sheet&&state.sheet.date)||'';
-  renderGauges(); renderOptions(last);
+  renderGauges(); renderOptions(last); $('b-biz').hidden=!(state.sheet&&state.sheet.business);
+}
+function renderPockets(){
+  const el=$('pockets'); el.innerHTML=''; if(!state)return;
+  const s=state.sheet; const items=['pocket1','pocket2'].map(k=>s.equipment[k]&&itemByName(s.equipment[k])).filter(Boolean);
+  items.forEach(it=>{const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name)||(it.tags||[]).includes('perishable');const w=document.createElement('div');w.className='pk';const c=document.createElement('canvas');c.width=12;c.height=12;drawIcon(c.getContext('2d'),it.art&&it.art!=='none'?it.art:(it.icon||'none'));w.appendChild(c);const n=document.createElement('span');n.textContent=it.name+(it.qty>1?' ×'+it.qty:'');w.appendChild(n);
+    const b=document.createElement('button');b.type='button';b.textContent=consumable?'USE':'HOLD';b.addEventListener('click',()=>act(consumable?'Robert uses the '+it.name+'.':'Robert takes out the '+it.name+'.'));w.appendChild(b);el.appendChild(w)});
 }
 function renderOptions(t){
+  renderPockets();
   optsEl.innerHTML='';
   const kind=t.kind||((t.options||[]).length?'choice':'narrative');
   if(kind==='narrative'&&!t.ask){const b=document.createElement('button');b.type='button';b.className='opt cont';b.innerHTML='<span class="n">›</span><span class="t">Continue</span>';b.addEventListener('click',()=>act('[continue]'));optsEl.appendChild(b);$('lead').textContent='';input.placeholder='Or do something else…';return}
@@ -432,10 +463,11 @@ function buildPrompt(action,dice){
 '=== YEAR BIBLE (never reveal) ===\n'+g.year1,
 '=== ADAPTATIONS AND STANDING RULES ===\n'+g.adaptation,
 '=== CURRENT STATE ===\nCharacter sheet (base values): '+JSON.stringify(state.sheet)+
-'\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+
+'\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+'\nON HIM (usable this scene): '+state.sheet.inventory.filter(i=>i.where==='on').map(i=>i.name+(i.qty>1?' x'+i.qty:'')+(i.condition!=='good'?' ('+i.condition+')':'')).join(', ')+'\nIN HIS TRUNK (not to hand unless he is where the trunk is): '+state.sheet.inventory.filter(i=>i.where!=='on').map(i=>i.name).join(', ')+'\nTrunk reachable in the current place: '+(trunkHere()?'yes':'no')+
 '\nRobert\'s current look: '+JSON.stringify(state.look||{})+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
+'=== CARRYING RULES ===\nRobert can use in a scene only what is ON HIM. New items he picks up are "on" if small (pockets hold two items; one may be a stack of sweets) and otherwise go to the trunk when he next reaches it; say where it went in changes. He may swap items only where the trunk is. Food is perishable. Contraband is confiscated in a Filch search; a quest item is never lost. Condition moves only through events (a fall, a fight, rain, time) and is reported in changes.',
 '=== DICE ===\nTrue random d20 results for this turn, use them in this order for any checks and show the arithmetic in one line inside the scene ("Nerve check: 14 + 5 = 19 against 16. He makes it."): '+dice.join(', ')+'. Do not roll unless the outcome is uncertain and matters. Add practice to the stat used (section 5b).',
 '=== PLAYER ACTION ===\n'+action,
 '=== OUTPUT ===\nReply with ONLY one JSON object, nothing before or after it. Put "kind" and then "scene" FIRST in the object, before every other field, so the prose can be shown while the rest is still being written. Shape:\n'+
@@ -446,7 +478,7 @@ function buildPrompt(action,dice){
 ' "ask": false,\n'+
 ' "tag": "one of: '+TAGS+'",\n'+
 ' "tod": "day or dusk or night",\n'+
-' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"text":"for anything readable (a letter, a note, a ticket, a page, a label) the full text as Robert would read it, with line breaks; omit for other items"}],"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
+' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | worn | broken (a broken item gives no bonus until Reparo or a shop fixes it)","tags":["any of: quest (plot item, cannot be lost or sold), contraband (Filch confiscates it if found), perishable (food; goes off after a few days), gift (someone gave it; giving it away has consequences), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
 ' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
@@ -487,7 +519,7 @@ async function act(text){
   if(!out||typeof out!=='object'||!out.scene){setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
   const n=(state.n||0)+1;
   const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
-  if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment()}
+  if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment();syncWhere()}
   if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
   if(out.look&&typeof out.look==='object'){const L=state.look||{};['hair_style','hair_colour','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(out.look.skin!=null)L.skin=+out.look.skin;state.look=L}
   if(out.progress&&typeof out.progress==='object')state.progress=out.progress;
@@ -511,9 +543,15 @@ function showSheet(){
   const stats=STATS.map(k=>{let cells='';for(let i=0;i<10;i++)cells+='<i class="'+(i<s.stats[k]?'on':(i<eff[k]?'bn':''))+'"></i>';let pr='';for(let i=0;i<10;i++)pr+='<i class="'+(i<s.practice[k]?'on':'')+'"></i>';
     return '<div class="stat"><span class="nm">'+k+'</span><span class="bar2">'+cells+'</span><span class="num">'+eff[k]+(b[k]?' <b>+'+b[k]+'</b>':'')+'</span><span class="pr" title="practice '+s.practice[k]+'/10">'+pr+'</span></div>'}).join('');
   const slots=SLOTS.map(sl=>{const it=s.equipment[sl]&&itemByName(s.equipment[sl]);return '<button type="button" class="slot" data-slot="'+sl+'"><span class="sn">'+sl.replace(/\d/,' $&').toUpperCase()+'</span><span class="sl-row">'+(it?'<canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas>':'')+'<span class="it '+(it?'':'e')+'">'+(it?esc(it.name)+(it.bonus&&it.bonus.stat?' · +'+it.bonus.n+' '+it.bonus.stat:''):'empty')+'</span></span></button>'}).join('');
-  const inv=s.inventory.length?s.inventory.map((it,i)=>{const eqd=SLOTS.some(sl=>s.equipment[sl]===it.name);const canEq=!!it.slot;const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty/i.test(it.name)||(it.qty>1&&!it.slot);
-    return '<div class="item"><canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas><div class="in" data-open="'+i+'" role="button" tabindex="0"><div class="nm">'+esc(it.name)+(it.qty>1?' ×'+it.qty:'')+(it.bonus&&it.bonus.stat?' <span class="bn">+'+esc(it.bonus.n)+' '+esc(it.bonus.stat)+'</span>':'')+'</div>'+(it.note?'<div class="nt">'+esc(it.note)+'</div>':'')+'</div><span class="gr '+esc(it.grade)+'">'+esc(it.grade).toUpperCase()+'</span>'+
-      (canEq?'<button type="button" class="mini" data-eq="'+i+'">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable?'<button type="button" class="mini" data-use="'+i+'">Use</button>':'')+'</div>'}).join(''):'<p class="note">Nothing yet.</p>';
+  const tagHtml=it=>(it.tags||[]).map(t=>'<span class="tag t-'+t+'">'+t.toUpperCase()+'</span>').join('')+(it.condition&&it.condition!=='good'?'<span class="tag t-'+it.condition+'">'+it.condition.toUpperCase()+'</span>':'');
+  const row=(it,i)=>{const eqd=SLOTS.some(sl=>s.equipment[sl]===it.name);const canEq=!!it.slot;const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name)||(it.tags||[]).includes('perishable');
+    const moveBtn= trunkHere()&&!eqd ? '<button type="button" class="mini" data-move="'+i+'">'+(it.where==='on'?'To trunk':'Take')+'</button>' : '';
+    return '<div class="item"><canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas><div class="in" data-open="'+i+'" role="button" tabindex="0"><div class="nm">'+esc(it.name)+(it.qty>1?' ×'+it.qty:'')+(it.bonus&&it.bonus.stat?' <span class="bn'+(it.condition==='broken'?' off':'')+'">+'+esc(it.bonus.n)+' '+esc(it.bonus.stat)+'</span>':'')+'</div>'+(it.note?'<div class="nt">'+esc(it.note)+'</div>':'')+'<div class="tags">'+tagHtml(it)+'</div></div><span class="gr '+esc(it.grade)+'">'+esc(it.grade).toUpperCase()+'</span>'+
+      (canEq?'<button type="button" class="mini" data-eq="'+i+'">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable&&it.where==='on'?'<button type="button" class="mini" data-use="'+i+'">Use</button>':'')+moveBtn+'</div>'};
+  const onHim=s.inventory.map((it,i)=>[it,i]).filter(([it])=>it.where==='on'), inTrunk=s.inventory.map((it,i)=>[it,i]).filter(([it])=>it.where!=='on');
+  const pocketsUsed=['pocket1','pocket2'].filter(k=>s.equipment[k]).length;
+  const inv='<div class="k">ON HIM · pockets '+pocketsUsed+'/2</div><div class="inv">'+(onHim.length?onHim.map(([it,i])=>row(it,i)).join(''):'<p class="note">Nothing in his pockets.</p>')+'</div>'+
+    '<div class="k" style="margin-top:14px">TRUNK · '+inTrunk.length+'/24'+(trunkHere()?'':' · not here')+'</div><div class="inv">'+(inTrunk.length?inTrunk.map(([it,i])=>row(it,i)).join(''):'<p class="note">Empty.</p>')+'</div>'+(trunkHere()?'':'<p class="note">The trunk is in the dormitory. Swap things when you are back there.</p>');
   const spells=s.spells.length?s.spells.map(x=>esc(x.name)+' <span class="note">('+esc(x.level)+')</span>').join(', '):'none yet';
   const rep=Object.entries(s.reputation).map(([k,v])=>esc(k)+' '+(v>0?'+':'')+esc(v)).join(' · ')||'—';
   const money=(s.money.g?s.money.g+' G ':'')+(s.money.s?s.money.s+' S ':'')+(s.money.k?s.money.k+' K':'')||'nothing';
@@ -521,7 +559,7 @@ function showSheet(){
    '<div class="hero"><canvas id="doll" width="32" height="54"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
    '<div class="k">STATS · gold = equipment bonus · thin line = practice toward the next point</div>'+stats+
    '<div class="grid"><div class="wide"><div class="k">EQUIPMENT · tap a slot to unequip</div><div class="slots">'+slots+'</div></div>'+
-   '<div class="wide"><div class="k">INVENTORY</div><div class="inv">'+inv+'</div></div>'+
+   '<div class="wide">'+inv+'</div>'+
    '<div><div class="k">MONEY</div><div class="v">'+money+'</div></div><div><div class="k">HOUSE POINTS</div><div class="v">'+esc(s.house_points==null?'—':s.house_points)+'</div></div>'+
    '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
    '<div class="wide"><div class="k">SPELLS</div><div class="v">'+spells+'</div></div>'+
@@ -532,6 +570,7 @@ function showSheet(){
   $('m-body').querySelectorAll('[data-slot]').forEach(el=>el.addEventListener('click',()=>{const sl=el.dataset.slot;if(s.equipment[sl]){delete s.equipment[sl];const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}}));
   $('m-body').querySelectorAll('[data-eq]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.eq];const eqd=SLOTS.find(sl=>s.equipment[sl]===it.name);if(eqd)delete s.equipment[eqd];else{let sl=it.slot;if(sl==='pocket')sl=!s.equipment.pocket1?'pocket1':'pocket2';s.equipment[sl]=it.name}const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}));
   $('m-body').querySelectorAll('[data-use]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.use];$('modal').hidden=true;act('Robert uses the '+it.name+'.')}));
+  $('m-body').querySelectorAll('[data-move]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.move];if(it.where==='on'){it.where='trunk';['pocket1','pocket2'].forEach(k=>{if(s.equipment[k]===it.name)delete s.equipment[k]})}else{if(it.slot==='pocket'||!it.slot){const free=!s.equipment.pocket1?'pocket1':(!s.equipment.pocket2?'pocket2':null);if(!free){return}if(it.slot==='pocket'||!it.slot)s.equipment[free]=it.name}it.where='on'}const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}));
   $('m-body').querySelectorAll('[data-open]').forEach(el=>{const go=()=>showItem(+el.dataset.open);el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
 }
 function showItem(i){
@@ -573,6 +612,16 @@ function showSettings(){
   $('st-import').addEventListener('click',()=>{openModal('IMPORT SAVE','<textarea id="imp" style="width:100%;height:160px;font:14px monospace"></textarea><div class="row"><button class="go" id="imp-go" type="button" style="padding:10px 14px">Import</button></div>');$('imp-go').addEventListener('click',()=>{try{window.HOG.importSave($('imp').value);location.reload()}catch(e){alert('Could not read that save')}})});
   $('st-reset').addEventListener('click',()=>{openModal('START OVER','<p>This wipes Robert’s save on this phone and begins again from the letter. The story documents stay.</p><div class="row"><button class="go" id="rs-go" type="button" style="padding:10px 14px">Yes, start over</button></div>');$('rs-go').addEventListener('click',async()=>{window.HOG.resetGame();await seedInitial(true);location.reload()})});
   const vs=window.HOG.voice; $('vstat').textContent=vs.status==='ready'?'Narrator ready':vs.statusMsg;
+}
+function showBusiness(){
+  const b=state&&state.sheet&&state.sheet.business; if(!b)return;
+  const heat=Math.max(0,Math.min(5,+b.heat||0)); let hcells='';for(let i=0;i<5;i++)hcells+='<i class="'+(i<heat?'on':'')+'"></i>';
+  openModal('BUSINESS','<div class="grid">'+
+   '<div><div class="k">STOCK</div><div class="v">'+esc(b.stock||0)+' '+esc(b.stock_item||'')+'</div></div><div><div class="k">SUPPLIER</div><div class="v">'+esc(b.supplier||'—')+'</div></div>'+
+   '<div><div class="k">SALES THIS WEEK</div><div class="v">'+esc(b.sales_this_week||0)+'</div></div><div><div class="k">PROFIT TO DATE</div><div class="v">'+esc(b.profit_total_sickles||0)+' Sickles</div></div>'+
+   '<div class="wide"><div class="k">HEAT · at 3 Filch confiscates stock · at 5 detention</div><div class="gauge hp"><div class="trk">'+hcells+'</div></div></div>'+
+   (b.notes?'<div class="wide"><div class="k">NOTES</div><div class="v">'+esc(b.notes)+'</div></div>':'')+
+   '<div class="wide note">Stock costs 1 Sickle a unit and sells for 2. Weekly sales are a die plus half your Charm. Over ten sales in a week adds Heat; a quiet week removes it.</div></div>');
 }
 function showNotes(){
   const p=(state&&state.progress)||{}, n=p.notes||{};
@@ -618,6 +667,7 @@ $('b-sheet').addEventListener('click',showSheet);
 $('b-notes').addEventListener('click',showNotes);
 $('b-settings').addEventListener('click',showSettings);
 $('b-people').addEventListener('click',showPeople);
+$('b-biz').addEventListener('click',showBusiness);
 $('b-recap').addEventListener('click',showRecap);
 
 
@@ -654,7 +704,7 @@ async function boot(){
   try{
     const s=await db.doc('game/state').get();
     state=s.exists?JSON.parse(JSON.stringify(s.data())):{n:0,sheet:{},progress:{},chronicle:[],prefs:{length:'long'}};
-    state.sheet=normSheet(state.sheet); syncEquipment();
+    state.sheet=normSheet(state.sheet); syncEquipment(); syncWhere();
     state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'};
         const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
     turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);

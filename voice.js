@@ -23,7 +23,7 @@ async function load(){
     }
     setStatus('ready','Narrator ready');
     return tts;
-  })().catch(e=>{loading=null;setStatus('error','Narrator unavailable: '+(e&&e.message||e));throw e});
+  })().catch(e=>{loading=null;setStatus('error','The narrator could not download (no connection?). Using the phone voice for now.');throw e});
   return loading;
 }
 V.preload=()=>load().catch(()=>{});
@@ -60,7 +60,7 @@ async function run(text){
       if(stopFlag)break;
       await playBuffer(audio.audio,audio.sampling_rate);
     }
-  }catch(e){ setStatus('error','Narration failed: '+(e&&e.message||e)) }
+  }catch(e){ setStatus('error','Narration stopped. Tap Listen to try again.') }
   playing=false; current=null; if(status==='speaking')setStatus('ready','');
 }
 /* device-voice fallback */
