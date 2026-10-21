@@ -212,6 +212,13 @@ details.earlier .turn + .turn::before{display:none}
 .box{background:var(--chip);border-left:3px solid var(--good);padding:8px 10px;font-size:15px}
 .box.bad{border-left-color:var(--hp)}
 .box b{font-family:var(--display);font-size:6px;letter-spacing:.08em;display:block;margin-bottom:4px;color:var(--muted)}
+.tabs{display:flex;gap:2px;margin:-4px 0 16px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{font-family:var(--display);font-size:8px;letter-spacing:.08em;color:var(--muted);background:transparent;border:0;border-bottom:2px solid transparent;padding:11px 10px 10px;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.hl{font-size:16.5px;margin:2px 0 10px}.hl.hurt,.hl.hospital{color:var(--hp)}.hl.hospital{font-weight:600}
+.nextev{flex-basis:100%;order:-1;font-family:var(--display);font-size:7px;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+.nextev b{color:var(--gold);font-weight:normal}
+.brand .hstate{font-family:var(--display);font-size:7px;color:#ffb0a0;letter-spacing:.06em}
 .pockets{display:flex;gap:6px;flex-wrap:wrap}
 .pockets:empty{display:none}
 .pk{display:flex;gap:6px;align-items:center;font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:5px 8px}
@@ -233,7 +240,7 @@ ul.plain{margin:0;padding-left:1.1em}
 <div id="app">
   <header class="top">
     <canvas id="scene" width="320" height="180" aria-label="Pixel scene"></canvas>
-    <div class="brand"><span>ROBERT THUNDER</span><span class="g h" id="g-hp"></span><span class="g m" id="g-mp"></span></div>
+    <div class="brand"><span>ROBERT THUNDER</span><span class="hstate" id="g-hp"></span><span class="g m" id="g-mp"></span></div>
     <div class="caption"><span id="cap-place"></span><span id="cap-date" class="date"></span></div>
   </header>
   <main id="page" aria-live="polite">
@@ -247,11 +254,7 @@ ul.plain{margin:0;padding-left:1.1em}
     <form id="free"><input id="action" type="text" autocomplete="off" placeholder="Or tell me what you do…"><button class="go" id="b-go" type="submit">Go</button></form>
     <div class="bar">
       <button type="button" id="b-sheet">Character</button>
-      <button type="button" id="b-spells">Spells</button>
-      <button type="button" id="b-notes">Notes</button>
-      <button type="button" id="b-people">People</button>
-      <button type="button" id="b-biz" hidden>Business</button>
-      <button type="button" id="b-recap">Recap</button>
+      <button type="button" id="b-journal">Journal</button>
       <span class="sp"></span>
       <button type="button" id="b-settings">Settings</button>
     </div>
@@ -342,13 +345,14 @@ function normSheet(s){
   s.stats=s.stats||{}; STATS.forEach(k=>{s.stats[k]=Math.max(1,Math.min(10,+s.stats[k]||1))});
   s.practice=s.practice||{}; STATS.forEach(k=>{s.practice[k]=Math.max(0,Math.min(10,+s.practice[k]||0))});
   s.stat_use=s.stat_use||{}; STATS.forEach(k=>{s.stat_use[k]=+s.stat_use[k]||0});
-  s.hp=s.hp&&typeof s.hp==='object'?{cur:+s.hp.cur||0,max:+s.hp.max||10}:{cur:10,max:10};
+  if(!['fine','hurt','hospital'].includes(s.health))s.health=(s.hp&&typeof s.hp==='object'&&+s.hp.cur<(+s.hp.max||10)/2)?'hurt':'fine'; delete s.hp;
   s.mp=s.mp&&typeof s.mp==='object'?{cur:+s.mp.cur||0,max:+s.mp.max||(3+s.stats.Spellwork)}:{cur:3+s.stats.Spellwork,max:3+s.stats.Spellwork};
-  s.hp.cur=Math.max(0,Math.min(s.hp.max,s.hp.cur)); s.mp.cur=Math.max(0,Math.min(s.mp.max,s.mp.cur));
+  s.mp.cur=Math.max(0,Math.min(s.mp.max,s.mp.cur));
   s.inventory=Array.isArray(s.inventory)?s.inventory.map(it=>typeof it==='string'?{name:it,grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1}:Object.assign({grade:'common',slot:null,bonus:null,note:'',art:'none',qty:1},it)):[];
   s.inventory.forEach(it=>{if(it.slot&&!SLOTS.includes(it.slot)&&it.slot!=='pocket')it.slot=null;
-    if(!['good','worn','broken'].includes(it.condition))it.condition='good';
-    if(!Array.isArray(it.tags))it.tags=[]; it.tags=it.tags.filter(t=>['quest','contraband','perishable','gift','stock'].includes(t));
+    if(it.condition!=='broken')it.condition='good';
+    if(!Array.isArray(it.tags))it.tags=[]; it.tags=it.tags.filter(t=>['quest','contraband','stock'].includes(t));
+    if(!['prized','rare'].includes(it.grade))it.bonus=null;
     if(!['on','trunk'].includes(it.where))it.where=null;});
   s.business=s.business&&typeof s.business==='object'?s.business:null;
   s.equipment=s.equipment&&typeof s.equipment==='object'?s.equipment:{};
@@ -382,7 +386,7 @@ function artMap(){const m={};SLOTS.forEach(sl=>{const it=state.sheet.equipment[s
 function renderGauges(){
   const s=state&&state.sheet; if(!s)return;
   const mk=(el,cur,max)=>{let h='';for(let i=0;i<Math.min(max,14);i++)h+='<i class="'+(i<cur?'on':'')+'"></i>';el.innerHTML=h;el.title=cur+'/'+max};
-  mk($('g-hp'),s.hp.cur,s.hp.max); mk($('g-mp'),s.mp.cur,s.mp.max);
+  $('g-hp').textContent=s.health==='hurt'?'HURT':s.health==='hospital'?'HOSPITAL WING':''; mk($('g-mp'),s.mp.cur,s.mp.max);
 }
 function renderTurn(t,old,latest){
   const d=document.createElement('div');d.className='turn'+(old?' old':'')+(latest?' latest':'');
@@ -398,8 +402,13 @@ function renderTurn(t,old,latest){
     const i=h.indexOf('</p>'); const youFirst=h.startsWith('<p class="you">'); h= youFirst ? h.slice(0,i+4)+chips+h.slice(i+4) : chips+h;}
   d.innerHTML=h; return d;
 }
+const EVENTS=[['2008-09-01','Hogwarts Express and the Sorting'],['2008-09-11','First flying lesson'],['2008-10-31','Halloween feast'],['2008-11-08','Quidditch · Gryffindor v Slytherin'],['2008-12-20','Christmas holidays'],['2009-01-04','Back to school'],['2009-01-31','Quidditch · Ravenclaw v Slytherin'],['2009-02-14','Valentine\u2019s Day'],['2009-02-28','Quidditch · Gryffindor v Hufflepuff'],['2009-04-04','Easter holidays'],['2009-05-02','Battle anniversary'],['2009-06-01','Exams'],['2009-06-25','Leaving Feast']];
+const MONTHS=['january','february','march','april','may','june','july','august','september','october','november','december'];
+function storyDate(){const s=state&&state.sheet&&state.sheet.date||'';const m=s.match(/(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})/i);if(!m)return null;return Date.UTC(+m[3],MONTHS.indexOf(m[2].toLowerCase()),+m[1])}
+function nextEvent(){const d=storyDate();if(d==null)return null;for(const [iso,name] of EVENTS){const days=Math.round((Date.parse(iso+'T00:00:00Z')-d)/86400000);if(days>=0)return {name,days}}return null}
 function renderPresent(t){
   const d=document.createElement('div');d.className='present';let any=false;
+  const ne=nextEvent(); if(ne){const w=document.createElement('div');w.className='nextev';const when=ne.days===0?'today':ne.days===1?'tomorrow':ne.days<15?'in '+ne.days+' days':'in '+Math.round(ne.days/7)+' weeks';w.innerHTML='NEXT · <b>'+esc(ne.name)+'</b> · '+when;d.appendChild(w)}
   (t.present||[]).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=24;c.height=24;drawPortrait(c.getContext('2d'),sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Mrs|Mr|Madam|Sir|Dame|Professor)\s+/,'').split(' ')[0];l.title=n;w.appendChild(l);d.appendChild(w)});
   (t.creatures||[]).forEach(k=>{any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=16;c.height=16;c.className='cr';drawCreature(c.getContext('2d'),k);w.appendChild(c);const l=document.createElement('span');l.textContent=k;w.appendChild(l);d.appendChild(w)});
   const spacer=document.createElement('div');spacer.style.flex='1';d.appendChild(spacer);
@@ -422,12 +431,12 @@ function renderAll(){
   setFocus(last.focus||deriveFocus(last)); paint(last.tag,last.tod);
   $('cap-place').textContent=(state&&state.sheet&&state.sheet.location)||'';
   $('cap-date').textContent=(state&&state.sheet&&state.sheet.date)||'';
-  renderGauges(); renderOptions(last); $('b-biz').hidden=!(state.sheet&&state.sheet.business);
+  renderGauges(); renderOptions(last);
 }
 function renderPockets(){
   const el=$('pockets'); el.innerHTML=''; if(!state)return;
   const s=state.sheet; const items=['pocket1','pocket2'].map(k=>s.equipment[k]&&itemByName(s.equipment[k])).filter(Boolean);
-  items.forEach(it=>{const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name)||(it.tags||[]).includes('perishable');const w=document.createElement('div');w.className='pk';const c=document.createElement('canvas');c.width=12;c.height=12;drawIcon(c.getContext('2d'),it.art&&it.art!=='none'?it.art:(it.icon||'none'));w.appendChild(c);const n=document.createElement('span');n.textContent=it.name+(it.qty>1?' ×'+it.qty:'');w.appendChild(n);
+  items.forEach(it=>{const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name);const w=document.createElement('div');w.className='pk';const c=document.createElement('canvas');c.width=12;c.height=12;drawIcon(c.getContext('2d'),it.art&&it.art!=='none'?it.art:(it.icon||'none'));w.appendChild(c);const n=document.createElement('span');n.textContent=it.name+(it.qty>1?' ×'+it.qty:'');w.appendChild(n);
     const b=document.createElement('button');b.type='button';b.textContent=consumable?'USE':'HOLD';b.addEventListener('click',()=>act(consumable?'Robert uses the '+it.name+'.':'Robert takes out the '+it.name+'.'));w.appendChild(b);el.appendChild(w)});
 }
 function renderOptions(t){
@@ -437,9 +446,9 @@ function renderOptions(t){
   if(kind==='narrative'&&!t.ask){const b=document.createElement('button');b.type='button';b.className='opt cont';b.innerHTML='<span class="n">›</span><span class="t">Continue</span>';b.addEventListener('click',()=>act('[continue]'));optsEl.appendChild(b);$('lead').textContent='';input.placeholder='Or do something else…';return}
   if(kind==='crossroads'){const w=document.createElement('div');w.className='cross';w.textContent='A crossroads. Choose one; the others close behind you.';optsEl.appendChild(w)}
   (t.options||[]).slice(0,5).forEach((o,i)=>{
-    const txt=typeof o==='string'?o:String(o.text||''); const st=typeof o==='object'&&o&&o.stat&&STATS.includes(o.stat)?o.stat:null;
+    const txt=typeof o==='string'?o:String(o.text||''); const st=typeof o==='object'&&o&&o.stat&&STATS.includes(o.stat)?o.stat:null; const df=typeof o==='object'&&o&&['Easy','Medium','Hard','Heroic'].includes(o.difficulty)?o.difficulty:null; const lab=[st,df].filter(Boolean).join(' · ');
     const b=document.createElement('button');b.type='button';b.className='opt';
-    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+esc(txt)+'</span>'+(st?'<span class="s">'+st.toUpperCase()+'</span>':'');
+    b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+esc(txt)+'</span>'+(lab?'<span class="s">'+lab.toUpperCase()+'</span>':'');
     b.addEventListener('click',()=>act(txt));optsEl.appendChild(b)});
   $('lead').textContent=t.ask?'SAY IT IN YOUR OWN WORDS':'WHAT DO YOU DO?';
   input.placeholder=t.ask?'Say it in your own words…':'Or tell me what you do…';
@@ -491,18 +500,19 @@ function buildPrompt(action,dice){
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
 '=== SPELL RULES ===\nSpells Robert knows (name, level, xp): '+JSON.stringify((state.sheet.spells||[]).map(x=>[x.name,x.level,x.xp||0]))+'\nA spell is cast only if he knows it. Each cast costs its Magic; at 0 Magic it fails. Each cast gives the spell +1 xp (report it in changes); 3 xp takes shaky to solid and resets xp; a success by 5 or more takes solid to mastered. Level modifies the check: shaky −2, solid 0, mastered +2, and a mastered spell has its flourish. Situation modifies the check: the right spell in the right place +2, the wrong place −2, and some uses simply fail or backfire as the card says. Use these cards, and invent none: '+JSON.stringify(SPELLS.filter(x=>x.year<=currentYear()+1).map(x=>({spell:x.name,strong:x.strong,weak:x.weak,flourish:x.flourish})))+'\nTeaching: spells arrive on the Year Bible schedule and through the people named on the card. When Robert learns one, add it to spells at shaky with xp 0 and say so in changes. Never teach a spell above his year.',
-'=== CARRYING RULES ===\nRobert can use in a scene only what is ON HIM. New items he picks up are "on" if small (pockets hold two items; one may be a stack of sweets) and otherwise go to the trunk when he next reaches it; say where it went in changes. He may swap items only where the trunk is. Food is perishable. Contraband is confiscated in a Filch search; a quest item is never lost. Condition moves only through events (a fall, a fight, rain, time) and is reported in changes.',
+'=== CARRYING RULES ===\nRobert can use in a scene only what is ON HIM. New items he picks up are "on" if small (pockets hold two items; one may be a stack of sweets) and otherwise go to the trunk when he next reaches it; say where it went in changes. He may swap items only where the trunk is. Contraband is confiscated in a Filch search; a quest item is never lost. An item breaks only through an event (a fall, a fight, a curse), reported in changes.',
+'=== CURRENT SYSTEM RULES (these override section 5b and any older rule they contradict) ===\nHEALTH is a state, not a number: fine; hurt (−2 on physical checks until treated or slept off); hospital (the scene ends in the hospital wing and he loses the rest of the day). There are no hit points. Never write HP. Magic points work as before.\nITEMS: common and useful items carry no stat bonus. They matter by what they let him do in a scene: a key opens a door, a sweet buys a favour, a catalogue tells him something. Only prized (+1) and rare (+2) items give a bonus, and there are few of them. Condition is good or broken. Tags are quest, contraband and stock only.\nDIFFICULTY: every option that will need a roll shows its difficulty. Easy 8, Medium 12, Hard 16, Heroic 20, plus 1 for each school year after the first. When the player picks it, roll against exactly that number. A typed action gets a difficulty you choose, stated in the roll line.\nDATES: keep sheet.date as a real date, "Weekday D Month YYYY", optionally followed by a comma and the part of the day. The page counts down to school events from it.',
 '=== DICE ===\nTrue random d20 results for this turn, use them in this order for any checks and show the arithmetic in one line inside the scene ("Nerve check: 14 + 5 = 19 against 16. He makes it."): '+dice.join(', ')+'. Do not roll unless the outcome is uncertain and matters. Add practice to the stat used (section 5b).',
 '=== PLAYER ACTION ===\n'+action,
 '=== OUTPUT ===\nReply with ONLY one JSON object, nothing before or after it. Put "kind" and then "scene" FIRST in the object, before every other field, so the prose can be shown while the rest is still being written. Shape:\n'+
 '{"kind": "narrative | choice | crossroads (see Pacing)",\n'+
 ' "scene": "the prose; paragraphs separated by \\n\\n; dialogue on its own lines; no markdown, no headers; *asterisks* only for a single emphasised word or a written note",\n'+
-' "changes": ["one short line per number that moved, with cause, e.g. \\"Nerve practice +2 (the drainpipe)\\", \\"HP −2 (Stinging Hex)\\", \\"Gryffindor +5 (Haverstock)\\", \\"3 Sickles spent (Honeydukes)\\"; empty array if nothing moved"],\n'+
-' "options": [{"text":"a choice","stat":"Nerve"}, ... 3 to 5 for a choice or crossroads page, different in kind (bold, careful, social, sneaky); stat is the stat the choice leans on, or null; EMPTY for a narrative page],\n'+
+' "changes": ["one short line per number that moved, with cause, e.g. \\"Nerve practice +2 (the drainpipe)\\", \\"Hurt (Stinging Hex)\\", \\"Gryffindor +5 (Haverstock)\\", \\"3 Sickles spent (Honeydukes)\\"; empty array if nothing moved"],\n'+
+' "options": [{"text":"a choice","stat":"Nerve","difficulty":"Hard"}, ... 3 to 5 for a choice or crossroads page, different in kind (bold, careful, social, sneaky); stat is the stat the choice leans on, or null; difficulty is Easy | Medium | Hard | Heroic when picking it means a roll, else null; EMPTY for a narrative page],\n'+
 ' "ask": false,\n'+
 ' "tag": "one of: '+TAGS+'",\n'+
 ' "tod": "day or dusk or night",\n'+
-' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | worn | broken (a broken item gives no bonus until Reparo or a shop fixes it)","tags":["any of: quest (plot item, cannot be lost or sold), contraband (Filch confiscates it if found), perishable (food; goes off after a few days), gift (someone gave it; giving it away has consequences), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
+' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"health":"fine | hurt | hospital","mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} ONLY on prized (+1) or rare (+2) items, else null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | broken (broken: no bonus and no use until Reparo or a shop fixes it)","tags":["any of: quest (plot item, never lost or sold), contraband (Filch confiscates it if found), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
 ' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
@@ -519,10 +529,12 @@ async function act(text){
   if(speaking)stopSpeaking();
   V.unlock(); if(window.HOG.settings.autoRead)V.preload();
   const lower=text.toLowerCase();
-  if(lower==='[sheet]')return showSheet();
-  if(lower==='[notes]')return showNotes();
-  if(lower==='[people]')return showPeople();
-  if(lower==='[recap]')return showRecap();
+  if(lower==='[sheet]')return showSheet('stats');
+  if(lower==='[items]'||lower==='[inventory]')return showSheet('items');
+  if(lower==='[spells]')return showSheet('spells');
+  if(lower==='[notes]')return showJournal('notes');
+  if(lower==='[people]')return showJournal('people');
+  if(lower==='[recap]')return showJournal('recap');
   if(lower==='[save]')return saveBlock();
   if(lower==='[long]'||lower==='[short]'||lower==='[standard]'){state.prefs={length:lower.slice(1,-1)};await saveState();return}
   await loadGM();
@@ -542,7 +554,7 @@ async function act(text){
   }
   if(!out||typeof out!=='object'||!out.scene){setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
   const n=(state.n||0)+1;
-  const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
+  const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null,difficulty:o&&o.difficulty||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
   if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment();syncWhere()}
   if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
   if(out.look&&typeof out.look==='object'){const L=state.look||{};['hair_style','hair_colour','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(out.look.skin!=null)L.skin=+out.look.skin;state.look=L}
@@ -558,17 +570,25 @@ let saving=null;
 async function saveState(){if(saving)await saving.catch(()=>{});saving=db.doc('game/state').set(JSON.parse(JSON.stringify(state)));try{await saving;$('saved').textContent='SAVED'}catch(e){$('saved').textContent='NOT SAVED ('+(e&&e.code||'error')+')';throw e}return saving}
 
 /* ---------- character screen ---------- */
-function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false;$('modal').querySelector('.card').scrollTop=0}
+function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false;$('modal').querySelector('.card').scrollTop=0;wireTabs()}
+function tabsBar(group,active){
+  const defs=group==='char'?[['stats','Stats'],['items','Items'],['spells','Spells']]:[['notes','Notes'],['people','People'],['recap','Recap']].concat(state&&state.sheet&&state.sheet.business?[['business','Business']]:[]);
+  return '<div class="tabs">'+defs.map(([k,l])=>'<button type="button" class="tab'+(k===active?' on':'')+'" data-tab="'+group+':'+k+'">'+l+'</button>').join('')+'</div>';
+}
+function wireTabs(){$('m-body').querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>{const [g,k]=b.dataset.tab.split(':');if(g==='char')showSheet(k);else showJournal(k)}))}
+let journalTab='notes';
+function showJournal(tab){if(!state)return;if(typeof tab==='string')journalTab=tab;if(journalTab==='business'&&!(state.sheet&&state.sheet.business))journalTab='notes';({notes:showNotes,people:showPeople,recap:showRecap,business:showBusiness})[journalTab]()}
 $('m-close').addEventListener('click',()=>{$('modal').hidden=true});
 $('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidden=true});
 function gauge(cls,label,cur,max){let c='';for(let i=0;i<max;i++)c+='<i class="'+(i<cur?'on':'')+'"></i>';return '<div class="gauge '+cls+'"><div class="lab"><span>'+label+'</span><span>'+cur+' / '+max+'</span></div><div class="trk">'+c+'</div></div>'}
-function showSheet(){
-  if(!state)return; const s=state.sheet, b=bonuses(), eff=effective(); state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'}; const look=state.look;
+let charTab='stats';
+function showSheet(tab){
+  if(!state)return; if(typeof tab==='string')charTab=tab; if(charTab==='spells')return showSpells(); const s=state.sheet, b=bonuses(), eff=effective(); state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'}; const look=state.look;
   const stats=STATS.map(k=>{let cells='';for(let i=0;i<10;i++)cells+='<i class="'+(i<s.stats[k]?'on':(i<eff[k]?'bn':''))+'"></i>';let pr='';for(let i=0;i<10;i++)pr+='<i class="'+(i<s.practice[k]?'on':'')+'"></i>';
     return '<div class="stat"><span class="nm">'+k+'</span><span class="bar2">'+cells+'</span><span class="num">'+eff[k]+(b[k]?' <b>+'+b[k]+'</b>':'')+'</span><span class="pr" title="practice '+s.practice[k]+'/10">'+pr+'</span></div>'}).join('');
   const slots=SLOTS.map(sl=>{const it=s.equipment[sl]&&itemByName(s.equipment[sl]);return '<button type="button" class="slot" data-slot="'+sl+'"><span class="sn">'+sl.replace(/\d/,' $&').toUpperCase()+'</span><span class="sl-row">'+(it?'<canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas>':'')+'<span class="it '+(it?'':'e')+'">'+(it?esc(it.name)+(it.bonus&&it.bonus.stat?' · +'+it.bonus.n+' '+it.bonus.stat:''):'empty')+'</span></span></button>'}).join('');
   const tagHtml=it=>(it.tags||[]).map(t=>'<span class="tag t-'+t+'">'+t.toUpperCase()+'</span>').join('')+(it.condition&&it.condition!=='good'?'<span class="tag t-'+it.condition+'">'+it.condition.toUpperCase()+'</span>':'');
-  const row=(it,i)=>{const eqd=SLOTS.some(sl=>s.equipment[sl]===it.name);const canEq=!!it.slot;const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name)||(it.tags||[]).includes('perishable');
+  const row=(it,i)=>{const eqd=SLOTS.some(sl=>s.equipment[sl]===it.name);const canEq=!!it.slot;const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty|nougat|pastille/i.test(it.name);
     const moveBtn= trunkHere()&&!eqd ? '<button type="button" class="mini" data-move="'+i+'">'+(it.where==='on'?'To trunk':'Take')+'</button>' : '';
     return '<div class="item"><canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas><div class="in" data-open="'+i+'" role="button" tabindex="0"><div class="nm">'+esc(it.name)+(it.qty>1?' ×'+it.qty:'')+(it.bonus&&it.bonus.stat?' <span class="bn'+(it.condition==='broken'?' off':'')+'">+'+esc(it.bonus.n)+' '+esc(it.bonus.stat)+'</span>':'')+'</div>'+(it.note?'<div class="nt">'+esc(it.note)+'</div>':'')+'<div class="tags">'+tagHtml(it)+'</div></div><span class="gr '+esc(it.grade)+'">'+esc(it.grade).toUpperCase()+'</span>'+
       (canEq?'<button type="button" class="mini" data-eq="'+i+'">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable&&it.where==='on'?'<button type="button" class="mini" data-use="'+i+'">Use</button>':'')+moveBtn+'</div>'};
@@ -576,19 +596,19 @@ function showSheet(){
   const pocketsUsed=['pocket1','pocket2'].filter(k=>s.equipment[k]).length;
   const inv='<div class="k">ON HIM · pockets '+pocketsUsed+'/2</div><div class="inv">'+(onHim.length?onHim.map(([it,i])=>row(it,i)).join(''):'<p class="note">Nothing in his pockets.</p>')+'</div>'+
     '<div class="k" style="margin-top:14px">TRUNK · '+inTrunk.length+'/24'+(trunkHere()?'':' · not here')+'</div><div class="inv">'+(inTrunk.length?inTrunk.map(([it,i])=>row(it,i)).join(''):'<p class="note">Empty.</p>')+'</div>'+(trunkHere()?'':'<p class="note">The trunk is in the dormitory. Swap things when you are back there.</p>');
-  const spells=s.spells.length?s.spells.map(x=>esc(x.name)+' <span class="note">('+esc(x.level)+')</span>').join(', '):'none yet';
   const rep=Object.entries(s.reputation).map(([k,v])=>esc(k)+' '+(v>0?'+':'')+esc(v)).join(' · ')||'—';
   const money=(s.money.g?s.money.g+' G ':'')+(s.money.s?s.money.s+' S ':'')+(s.money.k?s.money.k+' K':'')||'nothing';
-  openModal('CHARACTER',
-   '<div class="hero"><canvas id="doll" width="32" height="54"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
-   '<div class="k">STATS · gold = equipment bonus · thin line = practice toward the next point</div>'+stats+
-   '<div class="grid"><div class="wide"><div class="k">EQUIPMENT · tap a slot to unequip</div><div class="slots">'+slots+'</div></div>'+
-   '<div class="wide">'+inv+'</div>'+
-   '<div><div class="k">MONEY</div><div class="v">'+money+'</div></div><div><div class="k">HOUSE POINTS</div><div class="v">'+esc(s.house_points==null?'—':s.house_points)+'</div></div>'+
-   '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
-   '<div class="wide"><div class="k">SPELLS</div><div class="v">'+spells+'</div></div>'+
-   '<div class="wide"><div class="k">REPUTATION</div><div class="v">'+rep+'</div></div>'+
-   '<div class="wide"><div class="k">LOOK</div><div class="v">'+esc((look.hair_style||'')+' '+(look.hair_colour||'').replace('_',' ')+' hair')+(look.note?' · '+esc(look.note):'')+'<div class="note">Changes with the story: a haircut, a scar, a growth spurt.</div></div></div></div>');
+  const healthLine={fine:'Fine',hurt:'Hurt · −2 on physical checks until treated or slept off',hospital:'In the hospital wing'}[s.health]||'Fine';
+  const hero='<div class="hero"><canvas id="doll" width="32" height="54"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div><div class="k">HEALTH</div><div class="hl '+esc(s.health||'fine')+'">'+healthLine+'</div>'+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>';
+  const anyBonus=STATS.some(k=>b[k]);
+  const body= charTab==='items'
+    ? '<div class="k">EQUIPMENT · tap a slot to unequip</div><div class="slots">'+slots+'</div><div style="margin-top:18px">'+inv+'</div>'
+    : '<div class="k">STATS · thin line = practice toward the next point'+(anyBonus?' · gold = bonus from a prized item':'')+'</div>'+stats+
+      '<div class="grid"><div><div class="k">MONEY</div><div class="v">'+money+'</div></div><div><div class="k">HOUSE POINTS</div><div class="v">'+esc(s.house_points==null?'—':s.house_points)+'</div></div>'+
+      '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
+      '<div class="wide"><div class="k">REPUTATION</div><div class="v">'+rep+'</div></div>'+
+      '<div class="wide"><div class="k">LOOK</div><div class="v">'+esc((look.hair_style||'')+' '+(look.hair_colour||'').replace('_',' ')+' hair')+(look.note?' · '+esc(look.note):'')+'<div class="note">Changes with the story: a haircut, a scar, a growth spurt.</div></div></div></div>';
+  openModal('CHARACTER',tabsBar('char',charTab)+hero+body);
   drawDoll($('doll').getContext('2d'),look,artMap(),s.house);
   $('m-body').querySelectorAll('canvas.ic').forEach(c=>drawIcon(c.getContext('2d'),c.dataset.ico));
   $('m-body').querySelectorAll('[data-slot]').forEach(el=>el.addEventListener('click',()=>{const sl=el.dataset.slot;if(s.equipment[sl]){delete s.equipment[sl];const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}}));
@@ -607,12 +627,12 @@ function showItem(i){
   const text=it.text?'<div class="itemtext">'+esc(it.text)+'</div>':'';
   const consumable=/frog|potion|dittany|chocolate|sweet|cake|pasty/i.test(it.name)||(it.qty>1&&!it.slot);
   openModal('ITEM','<div class="itemview"><canvas id="iv" width="12" height="12"></canvas><div><div class="nm">'+esc(it.name)+'</div><div class="meta">'+meta+'</div><div class="note">'+esc(it.note||'')+'</div></div></div>'+text+
-    '<div class="row">'+(it.slot?'<button type="button" class="mini" id="iv-eq">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable?'<button type="button" class="mini" id="iv-use">Use</button>':'')+'<button type="button" class="mini" id="iv-look">Look closer</button><button type="button" class="mini" id="iv-back">Back to character</button></div>');
+    '<div class="row">'+(it.slot?'<button type="button" class="mini" id="iv-eq">'+(eqd?'Unequip':'Equip')+'</button>':'')+(consumable?'<button type="button" class="mini" id="iv-use">Use</button>':'')+'<button type="button" class="mini" id="iv-look">Look closer</button><button type="button" class="mini" id="iv-back">Back to items</button></div>');
   drawIcon($('iv').getContext('2d'),it.art&&it.art!=='none'?it.art:(it.icon||'none'));
   const eq=$('iv-eq'); if(eq)eq.addEventListener('click',()=>{const e2=SLOTS.find(sl=>s.equipment[sl]===it.name);if(e2)delete s.equipment[e2];else{let sl=it.slot;if(sl==='pocket')sl=!s.equipment.pocket1?'pocket1':'pocket2';s.equipment[sl]=it.name}saveState().catch(()=>{});showItem(i)});
   const use=$('iv-use'); if(use)use.addEventListener('click',()=>{$('modal').hidden=true;act('Robert uses the '+it.name+'.')});
   $('iv-look').addEventListener('click',()=>{$('modal').hidden=true;act('[Robert looks closely at the '+it.name+'. Describe it in detail, and if it has writing on it, give the writing in full.]')});
-  $('iv-back').addEventListener('click',showSheet);
+  $('iv-back').addEventListener('click',()=>showSheet('items'));
 }
 function showSettings(){
   const S=window.HOG.settings, vo=window.HOG.voice.VOICES;
@@ -640,7 +660,7 @@ function showSettings(){
 function showBusiness(){
   const b=state&&state.sheet&&state.sheet.business; if(!b)return;
   const heat=Math.max(0,Math.min(5,+b.heat||0)); let hcells='';for(let i=0;i<5;i++)hcells+='<i class="'+(i<heat?'on':'')+'"></i>';
-  openModal('BUSINESS','<div class="grid">'+
+  journalTab='business'; openModal('JOURNAL',tabsBar('journal','business')+'<div class="grid">'+
    '<div><div class="k">STOCK</div><div class="v">'+esc(b.stock||0)+' '+esc(b.stock_item||'')+'</div></div><div><div class="k">SUPPLIER</div><div class="v">'+esc(b.supplier||'—')+'</div></div>'+
    '<div><div class="k">SALES THIS WEEK</div><div class="v">'+esc(b.sales_this_week||0)+'</div></div><div><div class="k">PROFIT TO DATE</div><div class="v">'+esc(b.profit_total_sickles||0)+' Sickles</div></div>'+
    '<div class="wide"><div class="k">HEAT · at 3 Filch confiscates stock · at 5 detention</div><div class="gauge hp"><div class="trk">'+hcells+'</div></div></div>'+
@@ -650,7 +670,7 @@ function showBusiness(){
 function currentYear(){const s=state&&state.sheet;const m=String(s&&s.date||'').match(/20(\d\d)/);if(!m)return 1;const y=2000+(+m[1]);const sep=/(Sept|Oct|Nov|Dec)/i.test(s.date||'');return Math.max(1,Math.min(7,y-2008+(sep?1:0)))}
 function knownSpell(id){const sp=SPELL_BY_ID[id];return (state.sheet.spells||[]).find(x=>x.name.toLowerCase()===sp.name.toLowerCase())}
 function showSpells(){
-  const s=state.sheet, yr=currentYear();
+  charTab='spells'; const s=state.sheet, yr=currentYear();
   const schools=['Charms','Transfiguration','Defence','Hexes'];
   const lvl={shaky:1,solid:2,mastered:3};
   const html=schools.map(sc=>{
@@ -661,7 +681,7 @@ function showSpells(){
       const note=k?(k.level+(k.level!=='mastered'?' · practice '+(k.xp||0)+'/3':'')):(avail?x.when:(x.year>yr?'Year '+x.year:'needs '+x.prereq.filter(p=>!knownSpell(p)).map(p=>SPELL_BY_ID[p].name).join(', ')));
       return '<div class="sp '+(k?'known':avail?'avail':'locked')+'" data-spell="'+x.id+'"><canvas width="12" height="12" data-sp="'+x.id+'"></canvas><div class="in"><div class="nm">'+esc(x.name)+(k?pips+xp:'')+'</div><div class="nt">'+esc(note)+'</div></div><span class="mp">'+x.mp+' MP</span></div>'}).join('');
     return '<div class="school"><div class="k">'+sc.toUpperCase()+'</div>'+rows+'</div>'}).join('');
-  openModal('SPELLS · YEAR '+yr,'<p class="note">Red pips: shaky, solid, mastered. Gold dots: casts toward the next level. Dashed: can be learned now. Tap a spell for where it works and where it doesn’t.</p>'+html);
+  openModal('CHARACTER',tabsBar('char','spells')+'<div class="k">YEAR '+yr+'</div><p class="note">Red pips: shaky, solid, mastered. Gold dots: casts toward the next level. Dashed: can be learned now. Tap a spell for where it works and where it doesn’t.</p>'+html);
   $('m-body').querySelectorAll('canvas[data-sp]').forEach(c=>drawSpell(c.getContext('2d'),c.dataset.sp));
   $('m-body').querySelectorAll('[data-spell]').forEach(el=>el.addEventListener('click',()=>showSpell(el.dataset.spell)));
 }
@@ -680,15 +700,15 @@ function showSpell(id){
 function showNotes(){
   const p=(state&&state.progress)||{}, n=p.notes||{};
   const list=(arr,empty)=>Array.isArray(arr)&&arr.length?'<ul class="plain">'+arr.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">'+empty+'</p>';
-  openModal('ROBERT’S NOTES','<div class="grid"><div class="wide"><div class="k">WHAT HE SUSPECTS</div>'+list(n.suspicions,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE HAS NOTICED</div>'+list(n.clues,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE MEANS TO DO</div>'+list(n.aims,'Nothing decided.')+'</div><div class="wide"><div class="k">OPEN THREADS</div>'+list(p.open_threads,'None.')+'</div></div>');
+  journalTab='notes'; openModal('JOURNAL',tabsBar('journal','notes')+'<div class="grid"><div class="wide"><div class="k">WHAT HE SUSPECTS</div>'+list(n.suspicions,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE HAS NOTICED</div>'+list(n.clues,'Nothing yet.')+'</div><div class="wide"><div class="k">WHAT HE MEANS TO DO</div>'+list(n.aims,'Nothing decided.')+'</div><div class="wide"><div class="k">OPEN THREADS</div>'+list(p.open_threads,'None.')+'</div></div>');
 }
 function showPeople(){
   const cast=(state&&state.cast)||{}; const names=Object.keys(cast);
-  if(!names.length)return openModal('PEOPLE','<p class="note">Nobody yet. They arrive as you meet them.</p>');
-  openModal('PEOPLE',names.map(n=>{const sp=cast[n];return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(sp.relationship!=null&&sp.relationship!==''?'<span class="rel">'+(sp.relationship>0?'+':'')+esc(sp.relationship)+'</span>':'')+'</div>'}).join(''));
+  journalTab='people'; if(!names.length)return openModal('JOURNAL',tabsBar('journal','people')+'<p class="note">Nobody yet. They arrive as you meet them.</p>');
+  openModal('JOURNAL',tabsBar('journal','people')+names.map(n=>{const sp=cast[n];return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(sp.relationship!=null&&sp.relationship!==''?'<span class="rel">'+(sp.relationship>0?'+':'')+esc(sp.relationship)+'</span>':'')+'</div>'}).join(''));
   $('m-body').querySelectorAll('canvas[data-who]').forEach(c=>drawPortrait(c.getContext('2d'),cast[c.dataset.who]));
 }
-function showRecap(){const c=(state&&state.chronicle)||[];openModal('RECAP',c.length?'<ol style="padding-left:1.2em;margin:0">'+c.slice(-12).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ol>':'<p class="note">Nothing yet.</p>')}
+function showRecap(){journalTab='recap';const c=(state&&state.chronicle)||[];openModal('JOURNAL',tabsBar('journal','recap')+(c.length?'<ol style="padding-left:1.2em;margin:0">'+c.slice(-12).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ol>':'<p class="note">Nothing yet.</p>'))}
 async function saveBlock(){
   if(!sampleFn||!state)return;
   openModal('SAVE BLOCK','<p class="note">Writing the Save Block…</p>');
@@ -717,13 +737,9 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking)s
 /* ---------- wiring ---------- */
 form.addEventListener('submit',e=>{e.preventDefault();act(input.value)});
 $('b-stop').addEventListener('click',()=>{if(ctl)ctl.abort()});
-$('b-sheet').addEventListener('click',showSheet);
-$('b-notes').addEventListener('click',showNotes);
-$('b-spells').addEventListener('click',showSpells);
+$('b-sheet').addEventListener('click',()=>showSheet());
+$('b-journal').addEventListener('click',()=>showJournal());
 $('b-settings').addEventListener('click',showSettings);
-$('b-people').addEventListener('click',showPeople);
-$('b-biz').addEventListener('click',showBusiness);
-$('b-recap').addEventListener('click',showRecap);
 
 
 
