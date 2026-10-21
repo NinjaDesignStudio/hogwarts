@@ -53,8 +53,8 @@ async function callModel(input,opts,wantJson){
   opts=opts||{};
   if(!settings.apiKey)throw mkErr('not_granted','No API key');
   const messages=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:m.content}));
-  const body={model:settings.model,max_tokens:wantJson?7000:1500,stream:true,messages};
-  if(wantJson&&settings.thinking)body.thinking={type:'enabled',budget_tokens:3000};
+  const body={model:opts.fastModel||settings.model,max_tokens:opts.maxTokens||(wantJson?7000:1500),stream:true,messages};
+  if(wantJson&&settings.thinking&&!opts.fastModel)body.thinking={type:'enabled',budget_tokens:3000};
   if(body.thinking)body.max_tokens=Math.max(body.max_tokens,body.thinking.budget_tokens+5000);
   let res;
   try{

@@ -229,10 +229,18 @@ details.earlier .turn + .turn::before{display:none}
 .box{background:var(--chip);border-left:3px solid var(--good);padding:8px 10px;font-size:15px}
 .box.bad{border-left-color:var(--hp)}
 .box b{font-family:var(--display);font-size:6px;letter-spacing:.08em;display:block;margin-bottom:4px;color:var(--muted)}
-.opt .s.r{display:flex;flex-direction:column;align-items:flex-end;gap:3px;border:0;padding:0}
-.opt .s.r b{font-weight:normal;color:#fff;padding:4px 6px;border-radius:2px;white-space:nowrap}
-.opt .s.r i{font-style:normal;color:var(--muted)}
-.d-easy b{background:#3d7a3a}.d-medium b{background:#9a7414}.d-hard b{background:#c0502a}.d-heroic b{background:#7a3a9a}
+.assess .s{font-family:var(--display);font-size:7px;letter-spacing:.06em}
+.assess .s.r{align-items:flex-start!important}
+.opt .s.r,.assess .s.r{display:flex;flex-direction:column;align-items:flex-end;gap:3px;border:0;padding:0}
+.opt .s.r b,.assess .s.r b{font-weight:normal;color:#fff;padding:4px 6px;border-radius:2px;white-space:nowrap}
+.opt .s.r i,.assess .s.r i{font-style:normal;color:var(--muted)}
+.c-hi b{background:#3d7a3a}.c-mid b{background:#9a7414}.c-lo b{background:#c0502a}.c-vlo b{background:#a3262a}
+.assess{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--paper);border-radius:3px;padding:12px 14px;margin-bottom:10px}
+.assess .a-t{font-size:17px;font-style:italic;margin:0 0 8px}
+.assess .a-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.assess .a-why{font-size:15px;color:var(--muted);margin:8px 0 12px}
+.assess .row{display:flex;gap:8px}
+.assess .go{padding:11px 16px}
 .opt .s.safe{color:var(--muted);border-style:dashed}
 .you .rollline{display:block;font-style:normal;font-family:var(--display);font-size:7px;letter-spacing:.05em;margin-top:8px;color:var(--muted)}
 .rollline b{font-weight:normal}.o-great b,.o-ok b,b.o-great,b.o-ok{color:var(--good)}.o-great b,b.o-great{color:var(--gold)}.o-fail b,b.o-fail{color:var(--hp)}.o-bad b,b.o-bad{color:var(--hp)}
@@ -513,6 +521,7 @@ function rollCheck(c){
   const sum=d+(c.statV?' + '+c.statV+' '+c.stat:'')+(c.pen?' − 2 hurt':'')+' = '+total+' vs '+c.target;
   return Object.assign({},c,{d,total,margin,outcomeKey:key,outcome,sum,label:(c.stat?c.stat.toUpperCase()+' · ':'')+c.df.toUpperCase()});
 }
+function chanceClass(p){return p>=75?'hi':p>=50?'mid':p>=25?'lo':'vlo'}
 function rollChip(k){return '<span class="rollline o-'+esc(k.outcomeKey)+'">d20 · '+esc(k.sum)+' · <b>'+esc(k.outcome)+'</b></span>'}
 function renderOptions(t){
   renderPockets();
@@ -523,7 +532,7 @@ function renderOptions(t){
   (t.options||[]).slice(0,5).forEach((o,i)=>{
     const txt=typeof o==='string'?o:String(o.text||''); const chk=checkFor(o);
     const b=document.createElement('button');b.type='button';b.className='opt';
-    const badge=chk?'<span class="s r d-'+chk.df+'"><b>'+chk.df.toUpperCase()+' · '+chk.pct+'%</b>'+(chk.stat?'<i>'+chk.stat.toUpperCase()+'</i>':'')+'</span>':'<span class="s safe">NO ROLL</span>';
+    const badge=chk?'<span class="s r c-'+chanceClass(chk.pct)+'"><b>'+chk.df.toUpperCase()+' · '+chk.pct+'%</b>'+(chk.stat?'<i>'+chk.stat.toUpperCase()+'</i>':'')+'</span>':'<span class="s safe">NO ROLL</span>';
     b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+esc(txt)+'</span>'+badge;
     b.addEventListener('click',()=>{if(busy.hidden===false)return;const c=chk?rollCheck(checkFor(o)):null;if(c&&window.showDice)window.showDice(c);act(txt,c)});optsEl.appendChild(b)});
   $('lead').textContent=t.ask?'SAY IT IN YOUR OWN WORDS':'WHAT DO YOU DO?';
@@ -561,7 +570,7 @@ async function loadGM(){
 }
 function checkBlock(c){
   const P=PR(), line=(c.stat||'Luck')+' check: '+c.d+' + '+c.mod+' = '+c.total+' against '+c.target+'. '+P.He+(c.margin>=0?' makes it.':' misses.');
-  return '=== THE CHECK (the page rolled it for the option the player picked; binding) ===\nStat: '+(c.stat||'none')+(c.stat?', effective '+c.statV:'')+(c.pen?', hurt −2':'')+'. Difficulty: '+c.df+', target '+c.target+'. The d20 came up '+c.d+'. Result: '+c.outcome+' ('+(c.margin>=0?'by ':'missed by ')+Math.abs(c.margin)+'). GREAT SUCCESS: it works and something extra goes right. BAD FAILURE: it fails and something extra goes wrong.\nPut this roll line in the scene exactly: "'+line+'" Then narrate this outcome. Do not roll this check again and do not add modifiers to it. Any other roll this turn uses the DICE.';
+  return '=== THE CHECK (the page rolled it for the option the player picked; binding) ===\nStat: '+(c.stat||'none')+(c.stat?', effective '+c.statV:'')+(c.pen?', hurt −2':'')+'. Difficulty: '+c.df+', target '+c.target+'. The d20 came up '+c.d+'. Result: '+c.outcome+' ('+(c.margin>=0?'by ':'missed by ')+Math.abs(c.margin)+'). GREAT SUCCESS: it works and something extra goes right. BAD FAILURE: it fails and something extra goes wrong.\nPut this roll line in the scene exactly: "'+line+'" Then narrate this outcome. Do not roll this check again and do not add modifiers to it. Any other roll this turn uses the DICE. If the player typed this action and the world you know makes the goal impossible, a success means '+P.he+' gets out clean and learns why it cannot work, and a failure means it costs '+P.him+'.';
 }
 function lastOptions(){const t=turns[turns.length-1];const o=(t&&t.options)||[];if(!o.length)return '(none: a narrative page or free text)';return o.map((x,i)=>typeof x==='string'?(i+1)+'. '+x:(i+1)+'. '+x.text+(x.stat?' ['+x.stat+(x.difficulty?', '+x.difficulty:'')+']':'')).join('\n')}
 function buildPrompt(action,dice,check){
@@ -819,7 +828,33 @@ V.onStatus((s,m)=>{const txt=(s==='loading'||s==='error')?m:'';const el=$('vstat
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking)stopSpeaking()});
 
 /* ---------- wiring ---------- */
-form.addEventListener('submit',e=>{e.preventDefault();act(input.value)});
+form.addEventListener('submit',e=>{e.preventDefault();submitTyped(input.value)});
+async function assessAction(text){
+  const s=state.sheet, eff=effective(), last=turns[turns.length-1]||{};
+  const q='You judge whether a player\'s typed action in a Harry Potter text adventure needs a dice roll. Reply with ONLY a JSON object.\n\n'+
+   'Character: '+PN()+' Thunder, '+(ID().gender==='girl'?'a girl':'a boy')+', Hogwarts year '+currentYear()+'. Effective stats (1 to 10; 3 is ordinary for a first-year, 6 is very good): '+JSON.stringify(eff)+'. Health: '+(s.health||'fine')+'. Spells known: '+(s.spells||[]).map(x=>x.name).join(', ')+'.\n'+
+   'Where and when: '+(s.location||'')+', '+(s.date||'')+'.\nThe scene so far (end of the last page):\n'+String(last.scene||'').slice(-1600)+'\n\nThe player types: "'+text+'"\n\n'+
+   'Rules. Most actions are decisions or ordinary things (going somewhere, asking a question, saying something plain, buying, waiting) and need NO roll. Roll only when the outcome is genuinely uncertain and failure would matter. '+
+   'Stats: Spellwork = casting, charms, transfiguration, duelling; Brains = potions, research, puzzles, spotting clues; Nerve = courage, stealth, lying, theft, the stupid brave thing; Charm = persuasion, friendship, goodwill, haggling; Grit = stamina, climbing, chases, taking a hit. '+
+   'Difficulty from the task alone, not from his stats: easy (most people manage), medium (a fair chance either way for an ordinary person), hard (a real risk), heroic (bold to the point of folly, e.g. stealing a wand from Ollivander under his nose). Casting a spell he does not know cannot succeed: say so in note and set roll false.\n\n'+
+   'Shape: {"roll": true or false, "stat": "Spellwork|Brains|Nerve|Charm|Grit" or null, "difficulty": "easy|medium|hard|heroic" or null, "note": "under 14 words, plain English: what makes it hard, or why no roll"}';
+  return await sampleFn.json(q,{fastModel:'claude-haiku-5-5',maxTokens:300,cache:false});
+}
+async function submitTyped(raw){
+  const text=String(raw||'').trim(); if(!text||busy.hidden===false)return;
+  if(/^\[.*\]$/.test(text)||!state||!turns.length)return act(text);
+  input.value='';setBusy(true,'Weighing it up…');
+  let a=null;try{a=await assessAction(text)}catch(e){a=null}
+  setBusy(false);
+  const chk=a&&a.roll?checkFor({stat:a.stat,difficulty:a.difficulty}):null;
+  if(!chk)return act(text);
+  const el=document.createElement('div');el.className='assess';
+  el.innerHTML='<p class="a-t">'+esc(text)+'</p><div class="a-row"><span class="opt-s s r c-'+chanceClass(chk.pct)+'"><b>'+chk.df.toUpperCase()+' · '+chk.pct+'%</b>'+(chk.stat?'<i>'+chk.stat.toUpperCase()+'</i>':'')+'</span></div>'+
+    (a.note?'<p class="a-why">'+esc(a.note)+'</p>':'<p class="a-why"></p>')+'<div class="row"><button type="button" class="go" id="as-roll">Roll</button><button type="button" class="mini" id="as-edit">Change it</button></div>';
+  optsEl.innerHTML='';optsEl.appendChild(el);$('lead').textContent='THIS NEEDS A ROLL';scrollTo(el);
+  $('as-roll').addEventListener('click',()=>{const c=rollCheck(chk);if(window.showDice)window.showDice(c);act(text,c)});
+  $('as-edit').addEventListener('click',()=>{input.value=text;renderOptions(turns[turns.length-1]);input.focus()});
+}
 $('b-stop').addEventListener('click',()=>{if(ctl)ctl.abort()});
 $('b-sheet').addEventListener('click',()=>showSheet());
 $('b-journal').addEventListener('click',()=>showJournal());
