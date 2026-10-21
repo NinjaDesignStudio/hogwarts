@@ -245,6 +245,8 @@ details.earlier .turn + .turn::before{display:none}
 #dice .dice-res b{font-weight:normal;font-size:14px;letter-spacing:.08em}
 #dice .dice-res b.o-ok{color:#7fd07a}#dice .dice-res b.o-great{color:#ffd25a}#dice .dice-res b.o-fail{color:#ff8a7a}#dice .dice-res b.o-bad{color:#ff5a4a}
 #dice .dice-res span{font-size:8px;letter-spacing:.05em;color:#d8ccb0}
+#dice .d3c{aspect-ratio:4/5;width:auto;height:min(60vh,520px);max-width:100%;margin:0 auto;touch-action:none;cursor:grab}
+#dice .dice-tip{font-size:7px;letter-spacing:.06em;color:#d8ccb0}
 #dice .dice-hint{font-family:var(--display);font-size:6.5px;letter-spacing:.08em;color:#9c907d;margin-top:8px;opacity:0;transition:opacity .3s}
 #dice.done .dice-hint{opacity:1}
 .tabs{display:flex;gap:2px;margin:-4px 0 16px;border-bottom:1px solid var(--line);overflow-x:auto}
@@ -977,6 +979,7 @@ async function boot(){
     turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
     renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';
     if(!(state.look.created>=2))await showCreator();
+    setTimeout(()=>{try{window.preloadDice&&window.preloadDice()}catch(e){}},2500);
   }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}
 }
 boot();

@@ -50,7 +50,7 @@ function die(cx,x,y,ang,n,digAng,sc){
   digits(cx,n,'#8c1f25');
   cx.restore();
 }
-window.showDice=function(c){
+function showDice2D(c){
   return new Promise(res=>{
     const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
     audio();
@@ -82,5 +82,13 @@ window.showDice=function(c){
     };
     requestAnimationFrame(step);
   });
+}
+/* 3D tray with the cup when WebGL is there; the flat roll otherwise */
+let load3d=null;
+function need3d(){if(window.showDice3D)return Promise.resolve();if(!load3d)load3d=new Promise((res,rej)=>{const s=document.createElement('script');s.src='dice3d.js';s.onload=()=>res();s.onerror=()=>{load3d=null;rej(new Error('load'))};document.head.appendChild(s)});return load3d}
+window.preloadDice=()=>need3d().catch(()=>{});
+window.showDice=async function(c){
+  audio();
+  try{await need3d();return await window.showDice3D(c)}catch(e){return showDice2D(c)}
 };
 })();
