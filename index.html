@@ -127,6 +127,20 @@ details.earlier .turn + .turn::before{display:none}
 .lead .saved{color:var(--gold)}
 
 #modal{position:fixed;inset:0;z-index:20;background:rgba(6,5,10,.6);display:flex;align-items:flex-end;justify-content:center}
+#creator{position:fixed;inset:0;z-index:25;background:var(--paper);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#creator .cc-top{position:sticky;top:0;z-index:1;display:flex;gap:14px;align-items:flex-end;justify-content:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;background:#0b1026;border-bottom:3px solid var(--accent)}
+#cc-doll{width:96px;height:162px;image-rendering:pixelated}
+#cc-face{width:120px;height:120px;image-rendering:pixelated;background:#141a36;border:2px solid #c9a24a;border-radius:4px;margin-bottom:4px}
+#creator .cc-body{max-width:560px;margin:0 auto;padding:16px 16px 110px}
+#creator h2{font-family:var(--display);font-size:10px;letter-spacing:.08em;color:var(--accent);margin:4px 0 8px}
+.cc-sum{font-size:16px;line-height:1.4;font-style:italic;color:var(--ink);margin:0 0 6px}
+.cc-row{padding:12px 0;border-bottom:1px solid var(--line)}
+.cc-row .k{display:flex;gap:8px;margin-bottom:9px}.cc-row .k b{font-weight:normal;color:var(--gold)}
+.cc-opts{display:flex;flex-wrap:wrap;gap:8px}
+.cc-chip{font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:7px 11px;cursor:pointer}
+.cc-chip.on{border-color:var(--accent);background:var(--chip);box-shadow:inset 0 0 0 1px var(--accent)}
+#creator .cc-foot{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--paper2);border-top:1px solid var(--line)}
+#creator .cc-foot .go{padding:13px 18px}
 #setup{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:16px}
 #setup .card{width:100%;max-width:420px;background:var(--paper);border-top:3px solid var(--accent);border-radius:8px;padding:18px}
 #setup input,.settings input,.settings select{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink)}
@@ -271,6 +285,14 @@ ul.plain{margin:0;padding-left:1.1em}
     <div class="row"><button class="go" id="s-go" type="button" style="padding:12px 16px">Open the book</button></div>
     <p class="note" id="s-err" style="color:var(--accent)"></p>
   </div></div>
+  <div id="creator" hidden>
+    <div class="cc-top"><canvas id="cc-doll" width="32" height="54"></canvas><canvas id="cc-face" width="16" height="16"></canvas></div>
+    <div class="cc-body"><h2>WHO IS ROBERT?</h2>
+      <p class="cc-sum" id="cc-sum"></p>
+      <p class="note">You set this once. After today only the story changes how he looks: a haircut, a scar, new glasses.</p>
+      <div id="cc-rows"></div></div>
+    <div class="cc-foot"><button type="button" class="mini" id="cc-rand">Surprise me</button><button type="button" class="go" id="cc-done">This is Robert</button></div>
+  </div>
   <div id="modal" hidden><div class="card"><h2><span id="m-title"></span><button type="button" id="m-close">Close</button></h2><div id="m-body"></div></div></div>
 </div>
 
@@ -509,7 +531,7 @@ function buildPrompt(action,dice){
 '=== ADAPTATIONS AND STANDING RULES ===\n'+g.adaptation,
 '=== CURRENT STATE ===\nCharacter sheet (base values): '+JSON.stringify(state.sheet)+
 '\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+'\nON HIM (usable this scene): '+state.sheet.inventory.filter(i=>i.where==='on').map(i=>i.name+(i.qty>1?' x'+i.qty:'')+(i.condition!=='good'?' ('+i.condition+')':'')).join(', ')+'\nIN HIS TRUNK (not to hand unless he is where the trunk is): '+state.sheet.inventory.filter(i=>i.where!=='on').map(i=>i.name).join(', ')+'\nTrunk reachable in the current place: '+(trunkHere()?'yes':'no')+
-'\nRobert\'s current look: '+JSON.stringify(state.look||{})+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
+'\nRobert\'s look (the player chose it; describe him consistently and never contradict it): '+describeLook(normLook(state.look))+' '+JSON.stringify(Object.fromEntries(Object.entries(normLook(state.look)).filter(([k])=>!['created','v'].includes(k))))+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
 '=== OPTIONS SHOWN LAST TURN ===\n'+lastOptions()+'\nIf the player action is one of these, check it with exactly the stat and difficulty shown.',
@@ -530,7 +552,7 @@ function buildPrompt(action,dice){
 ' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
-' "look": null, or {"hair_style":"short|messy|parted|curly|long","hair_colour":"black|brown|dark_brown|blond|ginger|grey|auburn","note":"a short visible detail, e.g. a scratch over one eye"} ONLY when the story changed Robert\'s appearance this turn (a haircut, an injury, a growth spurt); otherwise null,\n'+
+' "look": null, or only the fields that changed, ONLY when the story changed Robert\'s appearance this turn (a haircut, an injury, a growth spurt, new or broken glasses): {"hair_style":"short|messy|parted|swept|spiky|curly|long|buzz","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum","glasses":"none|round|square","marks":["the full list after the change, from: freckles, mole, scar"],"height":"small|average|tall","note":"a short visible detail, e.g. a scratch over one eye"}; skin and eye colour never change; otherwise null,\n'+
 ' "focus": {"type":"item|creature|person|none","key":"what this turn is really about, shown as a close-up beside the painting: an item key from this list: '+FOCUS_KEYS.join(', ')+'; or a creature key; or the exact name of a person in cast; pick the thing the player will remember from this scene; change it every turn"},\n'+
 ' "progress": {"beats_done":[],"clues_planted":[],"reveals_spent":[],"branches":[],"adaptations":[],"open_threads":[],"notes":{"suspicions":[],"clues":[],"aims":[]}},\n'+
 ' "log": "one line summarising this turn for the chronicle"}\n'+
@@ -571,7 +593,7 @@ async function act(text){
   const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null,difficulty:o&&o.difficulty||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
   if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment();syncWhere()}
   if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
-  if(out.look&&typeof out.look==='object'){const L=state.look||{};['hair_style','hair_colour','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(out.look.skin!=null)L.skin=+out.look.skin;state.look=L}
+  if(out.look&&typeof out.look==='object'){const L=Object.assign({},state.look||{});['hair_style','hair_colour','glasses','height','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(Array.isArray(out.look.marks))L.marks=out.look.marks.map(String);state.look=normLook(L)}
   if(out.progress&&typeof out.progress==='object')state.progress=out.progress;
   state.chronicle=(state.chronicle||[]).concat([String(out.log||t.scene.slice(0,120))]).slice(-400);
   state.n=n; state.updated=t.at;
@@ -597,7 +619,7 @@ $('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidd
 function gauge(cls,label,cur,max){let c='';for(let i=0;i<max;i++)c+='<i class="'+(i<cur?'on':'')+'"></i>';return '<div class="gauge '+cls+'"><div class="lab"><span>'+label+'</span><span>'+cur+' / '+max+'</span></div><div class="trk">'+c+'</div></div>'}
 let charTab='stats';
 function showSheet(tab){
-  if(!state)return; if(typeof tab==='string')charTab=tab; if(charTab==='spells')return showSpells(); const s=state.sheet, b=bonuses(), eff=effective(); state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'}; const look=state.look;
+  if(!state)return; if(typeof tab==='string')charTab=tab; if(charTab==='spells')return showSpells(); const s=state.sheet, b=bonuses(), eff=effective(); state.look=normLook(state.look); const look=state.look;
   const stats=STATS.map(k=>{let cells='';for(let i=0;i<10;i++)cells+='<i class="'+(i<s.stats[k]?'on':(i<eff[k]?'bn':''))+'"></i>';let pr='';for(let i=0;i<10;i++)pr+='<i class="'+(i<s.practice[k]?'on':'')+'"></i>';
     return '<div class="stat"><span class="nm">'+k+'</span><span class="bar2">'+cells+'</span><span class="num">'+eff[k]+(b[k]?' <b>+'+b[k]+'</b>':'')+'</span><span class="pr" title="practice '+s.practice[k]+'/10">'+pr+'</span></div>'}).join('');
   const slots=SLOTS.map(sl=>{const it=s.equipment[sl]&&itemByName(s.equipment[sl]);return '<button type="button" class="slot" data-slot="'+sl+'"><span class="sn">'+sl.replace(/\d/,' $&').toUpperCase()+'</span><span class="sl-row">'+(it?'<canvas class="ic" width="12" height="12" data-ico="'+esc(it.art&&it.art!=='none'?it.art:(it.icon||'none'))+'"></canvas>':'')+'<span class="it '+(it?'':'e')+'">'+(it?esc(it.name)+(it.bonus&&it.bonus.stat?' · +'+it.bonus.n+' '+it.bonus.stat:''):'empty')+'</span></span></button>'}).join('');
@@ -621,7 +643,7 @@ function showSheet(tab){
       '<div class="grid"><div><div class="k">MONEY</div><div class="v">'+money+'</div></div><div><div class="k">HOUSE POINTS</div><div class="v">'+esc(s.house_points==null?'—':s.house_points)+'</div></div>'+
       '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
       '<div class="wide"><div class="k">REPUTATION</div><div class="v">'+rep+'</div></div>'+
-      '<div class="wide"><div class="k">LOOK</div><div class="v">'+esc((look.hair_style||'')+' '+(look.hair_colour||'').replace('_',' ')+' hair')+(look.note?' · '+esc(look.note):'')+'<div class="note">Changes with the story: a haircut, a scar, a growth spurt.</div></div></div></div>';
+      '<div class="wide"><div class="k">LOOK</div><div class="v">'+esc(describeLook(look))+'<div class="note">Changes with the story: a haircut, a scar, a growth spurt.</div></div></div></div>';
   openModal('CHARACTER',tabsBar('char',charTab)+hero+body);
   drawDoll($('doll').getContext('2d'),look,artMap(),s.house);
   $('m-body').querySelectorAll('canvas.ic').forEach(c=>drawIcon(c.getContext('2d'),c.dataset.ico));
@@ -757,6 +779,67 @@ $('b-settings').addEventListener('click',showSettings);
 
 
 
+/* ---------- character creation (once per save) ---------- */
+const LOOK_OPTS={
+  hair_style:[['short','Short'],['messy','Messy'],['parted','Parted'],['swept','Swept'],['spiky','Spiky'],['curly','Curly'],['long','Long'],['buzz','Buzz cut']],
+  hair_colour:[['black','black'],['dark_brown','dark brown'],['brown','brown'],['light_brown','light brown'],['auburn','auburn'],['ginger','ginger'],['blond','blond'],['platinum','platinum blond']],
+  eye_colour:[['dark_brown','dark brown'],['brown','brown'],['hazel','hazel'],['green','green'],['blue','blue'],['grey','grey']],
+  brows:[['thin','Neat'],['thick','Heavy']],
+  glasses:[['none','None'],['round','Round wire'],['square','Square']],
+  marks:[['freckles','Freckles'],['mole','A mole on one cheek'],['scar','A scar through one eyebrow']],
+  height:[['small','Small for his age'],['average','Average'],['tall','Tall for his age']]
+};
+const optLabel=(k,v)=>{const o=(LOOK_OPTS[k]||[]).find(x=>x[0]===v);return o?o[1]:String(v||'').replace(/_/g,' ')};
+function normLook(l){
+  l=Object.assign({},l||{});
+  if(!l.created&&l.skin!=null&&l.v!==2)l.skin=[1,2,4,6,7][Math.max(0,Math.min(4,l.skin|0))]; l.v=2;
+  l.skin=Math.max(0,Math.min(DOLL.skins.length-1,l.skin==null?2:l.skin|0));
+  const pick=(k,d)=>{const ok=k==='hair_colour'?Object.keys(DOLL.hairColours):(LOOK_OPTS[k]||[]).map(x=>x[0]);if(!ok.includes(l[k]))l[k]=d};
+  pick('hair_style','messy');pick('hair_colour','dark_brown');pick('eye_colour','brown');pick('brows','thin');pick('glasses','none');pick('height','average');
+  l.marks=(Array.isArray(l.marks)?l.marks:[]).filter(m=>LOOK_OPTS.marks.some(x=>x[0]===m));
+  return l;
+}
+function describeLook(l){
+  const bits=[optLabel('hair_style',l.hair_style).replace('Buzz cut','buzz-cut')+' '+optLabel('hair_colour',l.hair_colour)+' hair', optLabel('eye_colour',l.eye_colour)+' eyes'];
+  if(l.brows==='thick')bits.push('heavy eyebrows');
+  if(l.glasses!=='none')bits.push(optLabel('glasses',l.glasses).toLowerCase()+' glasses');
+  (l.marks||[]).forEach(m=>bits.push(optLabel('marks',m).replace(/^A /,'a ').toLowerCase()));
+  let s=bits.join(', '); s=s.charAt(0).toUpperCase()+s.slice(1)+'.';
+  if(l.height!=='average')s+=' '+optLabel('height',l.height)+'.';
+  if(l.note)s+=' '+l.note.charAt(0).toUpperCase()+l.note.slice(1)+(/[.!?]$/.test(l.note)?'':'.');
+  return s;
+}
+function showCreator(){
+  return new Promise(res=>{
+    let L=normLook(state.look);
+    const rows=[['skin','SKIN'],['hair_style','HAIR'],['hair_colour','HAIR COLOUR'],['eye_colour','EYES'],['brows','BROWS'],['glasses','GLASSES'],['marks','MARKS · any or none'],['height','HEIGHT']];
+    const off=document.createElement('canvas');off.width=32;off.height=54;
+    const paintCC=()=>{
+      const eq=Object.assign(artMap(),{head:'none'});
+      drawDoll($('cc-doll').getContext('2d'),L,eq,state.sheet.house);
+      drawDoll(off.getContext('2d'),L,eq,state.sheet.house);
+      const f=$('cc-face').getContext('2d');f.imageSmoothingEnabled=false;f.fillStyle='#141a36';f.fillRect(0,0,16,16);f.drawImage(off,8,8,16,16,0,0,16,16);
+      $('cc-sum').textContent=describeLook(L);
+    };
+    const build=()=>{
+      $('cc-rows').innerHTML=rows.map(([k,lab])=>{
+        let opts;
+        if(k==='skin')opts=DOLL.skins.map((c,i)=>'<button type="button" class="sw'+(L.skin===i?' on':'')+'" data-k="skin" data-v="'+i+'" style="background:'+c+'" aria-label="skin tone '+(i+1)+'"></button>').join('');
+        else if(k==='hair_colour'||k==='eye_colour'){const pal=k==='hair_colour'?DOLL.hairColours:DOLL.eyeColours;opts=LOOK_OPTS[k].map(([v,n])=>'<button type="button" class="sw'+(L[k]===v?' on':'')+'" data-k="'+k+'" data-v="'+v+'" style="background:'+pal[v]+'" aria-label="'+n+'"></button>').join('')}
+        else opts=LOOK_OPTS[k].map(([v,n])=>{const on=k==='marks'?L.marks.includes(v):L[k]===v;return '<button type="button" class="cc-chip'+(on?' on':'')+'" data-k="'+k+'" data-v="'+v+'">'+esc(n)+'</button>'}).join('');
+        const cur=k==='hair_colour'||k==='eye_colour'?' · <b>'+esc(optLabel(k,L[k]))+'</b>':'';
+        return '<div class="cc-row"><div class="k">'+lab+cur+'</div><div class="cc-opts">'+opts+'</div></div>'}).join('');
+      $('cc-rows').querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{
+        const k=b.dataset.k,v=b.dataset.v;
+        if(k==='skin')L.skin=+v; else if(k==='marks'){L.marks=L.marks.includes(v)?L.marks.filter(m=>m!==v):L.marks.concat(v)} else L[k]=v;
+        build();paintCC()}));
+    };
+    const rnd=a=>a[Math.floor(Math.random()*a.length)];
+    $('cc-rand').onclick=()=>{L=Object.assign(L,{skin:Math.floor(Math.random()*DOLL.skins.length),hair_style:rnd(LOOK_OPTS.hair_style)[0],hair_colour:rnd(LOOK_OPTS.hair_colour)[0],eye_colour:rnd(LOOK_OPTS.eye_colour)[0],brows:rnd(['thin','thick']),glasses:Math.random()<.25?rnd(['round','square']):'none',marks:LOOK_OPTS.marks.map(x=>x[0]).filter(()=>Math.random()<.2),height:rnd(['small','average','average','tall'])});build();paintCC()};
+    $('cc-done').onclick=async()=>{state.look=Object.assign(L,{created:true});$('creator').hidden=true;renderAll();try{await saveState()}catch(e){}res()};
+    build();paintCC();$('creator').hidden=false;$('creator').scrollTop=0;
+  });
+}
 async function seedInitial(fresh){
   const bundle=JSON.parse(localStorage.getItem('hog.bundle')||'null'); if(!bundle)return;
   if(fresh){await db.doc('game/state').set(bundle.fresh.state);for(const t of bundle.fresh.turns)await db.doc('turns/'+tid(t.n)).set(t);return}
@@ -801,10 +884,11 @@ async function boot(){
     const s=await db.doc('game/state').get();
     state=s.exists?JSON.parse(JSON.stringify(s.data())):{n:0,sheet:{},progress:{},chronicle:[],prefs:{length:'long'}};
     state.sheet=normSheet(state.sheet); syncEquipment(); syncWhere();
-    state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'};
+    state.look=normLook(state.look);
         const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
     turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
     renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';
+    if(!state.look.created)await showCreator();
   }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}
 }
 boot();

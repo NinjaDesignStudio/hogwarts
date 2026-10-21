@@ -1,15 +1,16 @@
 /* Paper doll: 32x48 pixel sprite drawn from a look + equipment art keys. */
 const DOLL={
-  skins:['#f1d2b6','#e3b995','#c99470','#9c6a46','#6a4430'],
-  hairColours:{black:'#1b1a1f',brown:'#5a3a24',dark_brown:'#3a2616',blond:'#d9b25c',ginger:'#c4582a',grey:'#9a9aa0',auburn:'#8a3a22'},
-  hairStyles:['short','messy','parted','curly','long'],
+  skins:['#f6dcc6','#f1d2b6','#e3b995','#d4a57e','#c99470','#a87650','#8a5a3a','#5e3c28'],
+  hairColours:{black:'#1b1a1f',dark_brown:'#3a2616',brown:'#5a3a24',light_brown:'#7a5434',auburn:'#8a3a22',ginger:'#c4582a',blond:'#d9b25c',platinum:'#e6dab0',grey:'#9a9aa0'},
+  hairStyles:['short','messy','parted','swept','spiky','curly','long','buzz'],
+  eyeColours:{brown:'#5a3a1e',dark_brown:'#2e1c10',hazel:'#7a6a2a',green:'#3f7a46',blue:'#3a6aa8',grey:'#7a8a96'},
   house:{Gryffindor:['#8b1e24','#d9a94b'],Slytherin:['#1a4a2a','#c0c0c0'],Ravenclaw:['#1f3a6a','#b07a30'],Hufflepuff:['#d9b23a','#1a1a1a']}
 };
 function drawDoll(cx,look,eq,house){
   look=look||{}; eq=eq||{};
   const W=32,H=54; cx.clearRect(0,0,W,H);
   const r=(x,y,w,h,c)=>{cx.fillStyle=c;cx.fillRect(x,y+6,w,h)};
-  const skin=DOLL.skins[Math.max(0,Math.min(4,look.skin|0))], skinSh=shade(skin,.82);
+  const skin=DOLL.skins[Math.max(0,Math.min(DOLL.skins.length-1,look.skin|0))], skinSh=shade(skin,.82);
   const hair=DOLL.hairColours[look.hair_colour]||DOLL.hairColours.dark_brown, hairHi=shade(hair,1.25);
   const [h1,h2]=DOLL.house[house]||['#3a3a44','#9a9aa0'];
   const robes=eq.robes||'school_robes', head=eq.head||'none', neck=eq.neck||'none', hands=eq.hands||'none', feet=eq.feet||'school_shoes', comp=eq.companion||'none';
@@ -53,11 +54,26 @@ function drawDoll(cx,look,eq,house){
   if(neck==='amulet'){r(13,16,1,1,'#c9a24a');r(18,16,1,1,'#c9a24a');r(14,17,4,1,'#c9a24a');r(15,18,2,2,'#2f8a5a')}
   // head
   r(11,6,10,10,skin); r(11,6,1,10,skinSh); r(11,15,10,1,skinSh);
-  // eyes & mouth
-  r(13,10,1,1,'#1a1418'); r(17,10,1,1,'#1a1418'); r(14,13,3,1,shade(skin,.7));
+  // eyes, brows, marks, mouth
+  const iris=DOLL.eyeColours[look.eye_colour]||'#1a1418';
+  r(13,10,2,1,iris); r(17,10,2,1,iris); r(14,10,1,1,shade(iris,1.2)); r(17,10,1,1,shade(iris,1.2));
+  const brow=shade(hair,.85);
+  const specs=look.glasses==='round'||look.glasses==='square';
+  if(look.brows==='thick'){r(12,8,3,1,brow);r(17,8,3,1,brow);if(!specs){r(13,9,1,1,brow);r(18,9,1,1,brow)}} else {r(13,8,2,1,brow);r(17,8,2,1,brow)}
+  const marks=Array.isArray(look.marks)?look.marks:[];
+  if(marks.includes('freckles')){const f=shade(skin,.66);r(12,11,1,1,f);r(14,12,1,1,f);r(17,12,1,1,f);r(19,11,1,1,f)}
+  if(marks.includes('mole'))r(19,12,1,1,shade(skin,.45));
+  if(marks.includes('scar')){r(18,7,1,1,'#e2b0a6');r(18,8,1,1,'#e2b0a6')}
+  r(14,13,3,1,shade(skin,.7));
+  // glasses
+  if(look.glasses==='round'){const g='#b09460';r(13,9,2,1,g);r(13,11,2,1,g);r(17,9,2,1,g);r(17,11,2,1,g);r(12,10,1,1,g);r(15,10,2,1,g);r(19,10,1,1,g)}
+  if(look.glasses==='square'){const g='#7a5636';r(12,9,8,1,g);r(12,10,1,1,g);r(19,10,1,1,g);r(15,10,2,1,shade(skin,.8));r(13,11,2,1,shade(skin,.88));r(17,11,2,1,shade(skin,.88))}
   // hair
   const st=look.hair_style||'short';
-  r(11,5,10,3,hair); r(11,6,1,4,hair); r(20,6,1,4,hair); r(12,5,8,1,hairHi);
+  if(st==='buzz'){r(11,5,10,2,shade(hair,.9)); r(11,6,1,2,shade(hair,.9)); r(20,6,1,2,shade(hair,.9)); for(let i=0;i<5;i++)r(12+i*2,5,1,1,hairHi)}
+  else {r(11,5,10,3,hair); r(11,6,1,4,hair); r(20,6,1,4,hair); r(12,5,8,1,hairHi)}
+  if(st==='swept'){r(16,4,5,1,hair);r(12,7,6,1,hair);r(12,8,3,1,hair);r(12,9,1,1,hair);r(14,6,5,1,hairHi);r(20,7,1,3,hair)}
+  if(st==='spiky'){[[11,3],[13,2],[15,3],[17,2],[19,3]].forEach(([x,y])=>{r(x,y,1,6-y,hair);r(x,y,1,1,hairHi)});r(12,8,1,1,hair);r(16,8,1,1,hair);r(19,8,1,1,hair)}
   if(st==='messy'){r(10,4,2,2,hair);r(13,3,2,2,hair);r(17,3,2,3,hair);r(20,4,2,2,hair);r(10,8,1,3,hair);r(21,7,1,4,hair);r(12,8,1,1,hair);r(19,8,1,2,hair);r(15,8,1,1,hairHi)}
   if(st==='parted'){r(15,5,1,3,hairHi);r(11,6,1,7,hair);r(20,6,1,6,hair);r(12,8,2,1,hair);r(19,8,1,1,hair)}
   if(st==='curly'){for(let i=0;i<6;i++)r(10+i*2,4+(i%2),2,2,hair);r(10,7,1,6,hair);r(21,7,1,6,hair);r(9,9,1,3,hair);r(22,9,1,3,hair);r(10,11,1,1,hairHi);r(21,12,1,1,hairHi)}
