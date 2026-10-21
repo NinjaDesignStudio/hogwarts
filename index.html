@@ -42,6 +42,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .caption .date{color:#d9c58a}
 .brand{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:8px;z-index:1;padding:5px 7px;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.55);border-radius:2px;line-height:1.5;display:flex;gap:10px;align-items:center}
 .brand .g{display:inline-flex;gap:3px;align-items:center}
+.listen{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:8px;z-index:2;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.6);border:1px solid rgba(243,234,208,.35);border-radius:2px;padding:6px 8px;line-height:1.5;cursor:pointer}
+.listen.on{background:var(--accent);border-color:var(--accent)}
 .brand .g i{display:inline-block;width:4px;height:6px;background:#3a3a44}
 .brand .g i.on{background:var(--hp)} .brand .g.m i.on{background:#5f9ad0}
 
@@ -74,6 +76,7 @@ details.earlier .turn + .turn::before{display:none}
 .person .rel{margin-left:auto;font-family:var(--display);font-size:7px;color:var(--gold);flex:none}
 .item canvas.ic{width:36px;height:36px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .status{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.status.above{margin:0 0 14px}
 .status span{font-family:var(--display);font-size:7px;line-height:1.5;letter-spacing:.03em;color:var(--gold);background:var(--chip);border:1px solid var(--line);padding:5px 7px;border-radius:3px}
 .status span.dn{color:var(--hp)} .status span.up{color:var(--good)}
 #busy{max-width:36em;margin:26px auto 0;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-style:italic;display:flex;gap:12px;align-items:center}
@@ -197,6 +200,7 @@ ul.plain{margin:0;padding-left:1.1em}
   <header class="top">
     <canvas id="scene" width="320" height="180" aria-label="Pixel scene"></canvas>
     <div class="brand"><span>ROBERT THUNDER</span><span class="g h" id="g-hp"></span><span class="g m" id="g-mp"></span></div>
+    <button type="button" class="listen" id="b-listen">▶ Listen</button>
     <div class="caption"><span id="cap-place"></span><span id="cap-date" class="date"></span></div>
   </header>
   <main id="page" aria-live="polite">
@@ -208,13 +212,11 @@ ul.plain{margin:0;padding-left:1.1em}
     <div id="options"></div>
     <form id="free"><input id="action" type="text" autocomplete="off" placeholder="Or tell me what you do…"><button class="go" id="b-go" type="submit">Go</button></form>
     <div class="bar">
-      <button type="button" id="b-listen" hidden>Listen</button>
       <button type="button" id="b-sheet">Character</button>
       <button type="button" id="b-notes">Notes</button>
       <button type="button" id="b-people">People</button>
       <button type="button" id="b-recap">Recap</button>
       <span class="sp"></span>
-      <button type="button" id="b-len">Length: long</button>
       <button type="button" id="b-settings">Settings</button>
     </div>
   </div></footer>
@@ -343,7 +345,8 @@ function renderTurn(t,old,latest){
     return lines.map(l=>'<p>'+esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')+'</p>').join('')}).join('');
   if(latest){const i=h.indexOf('<p>');if(i>=0){const ch=h[i+3];if(ch&&!/["“‘'*]/.test(ch))h=h.slice(0,i)+'<p class="lede">'+h.slice(i+3)}}
   const ch=Array.isArray(t.changes)&&t.changes.length?t.changes:(t.status?String(t.status).split(/\s·\s|\s\|\s/):[]);
-  if(ch.length) h+='<div class="status">'+ch.map(c=>{const s=String(c);const cls=/^forfeit/i.test(s)?'dn':/−|-\d|\bspent\b|\blost\b/.test(s)?'dn':/\+\d|\bgain|\brestored\b/.test(s)?'up':'';return '<span class="'+cls+'">'+esc(s.trim())+'</span>'}).join('')+'</div>';
+  if(ch.length){const chips='<div class="status above">'+ch.map(c=>{const s=String(c);const cls=/^forfeit/i.test(s)?'dn':/−|-\d|\bspent\b|\blost\b/.test(s)?'dn':/\+\d|\bgain|\brestored\b/.test(s)?'up':'';return '<span class="'+cls+'">'+esc(s.trim())+'</span>'}).join('')+'</div>';
+    const i=h.indexOf('</p>'); const youFirst=h.startsWith('<p class="you">'); h= youFirst ? h.slice(0,i+4)+chips+h.slice(i+4) : chips+h;}
   d.innerHTML=h; return d;
 }
 function renderPresent(t){
@@ -459,7 +462,7 @@ async function act(text){
   if(lower==='[people]')return showPeople();
   if(lower==='[recap]')return showRecap();
   if(lower==='[save]')return saveBlock();
-  if(lower==='[long]'||lower==='[short]'||lower==='[standard]'){state.prefs={length:lower.slice(1,-1)};$('b-len').textContent='Length: '+state.prefs.length;await saveState();return}
+  if(lower==='[long]'||lower==='[short]'||lower==='[standard]'){state.prefs={length:lower.slice(1,-1)};await saveState();return}
   await loadGM();
   const dice=[d20(),d20(),d20()];
   const pending=document.createElement('div');pending.className='turn';pending.innerHTML=/^\[continue\]$/i.test(text)?'':'<p class="you">'+esc(text)+'</p>';log.appendChild(pending);
@@ -551,6 +554,7 @@ function showItem(i){
 function showSettings(){
   const S=window.HOG.settings, vo=window.HOG.voice.VOICES;
   openModal('SETTINGS','<div class="settings">'+
+   '<div class="k">SCENE LENGTH</div><select id="st-len"><option value="long">Long (500–700 words)</option><option value="standard">Standard (250–450)</option><option value="short">Short (120–180)</option></select>'+
    '<div class="k">MODEL</div><select id="st-model"><option value="claude-opus-5-5">Opus 5.5 (best writing, slowest)</option><option value="claude-sonnet-5-5">Sonnet 5.5 (faster, cheaper)</option></select>'+
    '<label class="chk"><input type="checkbox" id="st-think"> Let the GM think before writing (better plotting, slower first word)</label>'+
    '<div class="k">NARRATOR VOICE</div><select id="st-voice">'+Object.entries(vo).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'+
@@ -560,6 +564,7 @@ function showSettings(){
    '<div class="k">API KEY</div><input id="st-key" type="password" autocomplete="off">'+
    '<div class="row"><button type="button" class="mini" id="st-test">Test voice</button><button type="button" class="mini" id="st-export">Export save</button><button type="button" class="mini" id="st-import">Import save</button><button type="button" class="mini" id="st-reset">Start over</button></div>'+
    '<p class="note">Saves live on this phone. Export before switching devices.</p></div>');
+  $('st-len').value=(state&&state.prefs&&state.prefs.length)||'long'; $('st-len').addEventListener('change',()=>{state.prefs={length:$('st-len').value};saveState().catch(()=>{})});
   $('st-model').value=S.model; $('st-think').checked=!!S.thinking; $('st-voice').value=S.voice; $('st-auto').checked=!!S.autoRead; $('st-rate').value=S.rate||1; $('st-key').value=S.apiKey||'';
   const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();window.HOG.saveSettings()};
   ['st-model','st-think','st-voice','st-auto','st-rate','st-key'].forEach(id=>$(id).addEventListener('change',save));
@@ -594,15 +599,15 @@ async function saveBlock(){
 
 /* ---------- narrator ---------- */
 const V=window.HOG.voice; let speaking=false;
-function stopSpeaking(){V.stop();speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='Listen'}
+function stopSpeaking(){V.stop();speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='▶ Listen'}
 async function speakCurrent(){
   if(!turns.length)return; if(speaking){stopSpeaking();return}
-  speaking=true;$('b-listen').classList.add('on');$('b-listen').textContent='Stop';
+  speaking=true;$('b-listen').classList.add('on');$('b-listen').textContent='■ Stop';
   await V.speak(narrationText(turns[turns.length-1]));
-  speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='Listen';
+  speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='▶ Listen';
 }
 function narrationText(t){return String(t.scene||'').split(/\n\s*\n/).map(b=>b.replace(/\*/g,'').trim()).filter(Boolean).join('\n\n')}
-$('b-listen').hidden=false; $('b-listen').addEventListener('click',speakCurrent);
+$('b-listen').addEventListener('click',speakCurrent);
 V.onStatus((s,m)=>{const el=$('vstat');if(el)el.textContent=(s==='loading'||s==='error')?m:(s==='ready'?'Narrator ready':'')});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking)stopSpeaking()});
 
@@ -615,7 +620,7 @@ $('b-settings').addEventListener('click',showSettings);
 $('b-people').addEventListener('click',showPeople);
 $('b-recap').addEventListener('click',showRecap);
 
-$('b-len').addEventListener('click',async()=>{if(!state)return;const order=['long','standard','short'];const cur=(state.prefs&&state.prefs.length)||'long';const nx=order[(order.indexOf(cur)+1)%3];state.prefs={length:nx};$('b-len').textContent='Length: '+nx;try{await saveState()}catch(e){}});
+
 
 async function seedInitial(fresh){
   const bundle=JSON.parse(localStorage.getItem('hog.bundle')||'null'); if(!bundle)return;
@@ -651,8 +656,7 @@ async function boot(){
     state=s.exists?JSON.parse(JSON.stringify(s.data())):{n:0,sheet:{},progress:{},chronicle:[],prefs:{length:'long'}};
     state.sheet=normSheet(state.sheet); syncEquipment();
     state.look=state.look||{skin:1,hair_style:'messy',hair_colour:'dark_brown'};
-    $('b-len').textContent='Length: '+((state.prefs&&state.prefs.length)||'long');
-    const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
+        const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
     turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
     renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';
   }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}
