@@ -13,7 +13,10 @@ async function load(){
   if(tts)return tts; if(loading)return loading;
   loading=(async()=>{
     setStatus('loading','Fetching the narrator (about 90 MB, once)…');
-    const mod=await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
+    let mod;
+    try{ mod=await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js') }
+    catch(e1){ mod=await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm') }
+    if(!mod.KokoroTTS)throw new Error('narrator module missing KokoroTTS');
     const hasGPU=!!navigator.gpu;
     const prog=(p)=>{if(p&&p.status==='progress'&&p.file&&/onnx/.test(p.file)){setStatus('loading','Fetching the narrator… '+Math.round(p.progress||0)+'%')}};
     try{

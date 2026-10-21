@@ -191,6 +191,27 @@ details.earlier .turn + .turn::before{display:none}
 .tags:empty{display:none}
 .tag{font-family:var(--display);font-size:5.5px;letter-spacing:.06em;padding:3px 4px;border-radius:2px;border:1px solid var(--line);color:var(--muted)}
 .tag.t-quest{color:var(--gold);border-color:var(--gold)} .tag.t-contraband{color:var(--accent);border-color:var(--accent)} .tag.t-perishable{color:var(--good);border-color:var(--good)} .tag.t-worn{color:var(--muted)} .tag.t-broken{color:var(--hp);border-color:var(--hp)}
+.school{margin-top:14px}
+.school .k{margin-bottom:8px}
+.sp{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.sp canvas{width:36px;height:36px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.sp.locked canvas,.sp.locked .nm{opacity:.45}
+.sp.avail canvas{border-style:dashed;border-color:var(--gold)}
+.sp .in{flex:1 1 auto;min-width:0}
+.sp .nm{font-size:17px;line-height:1.25}
+.sp .nt{font-size:14px;color:var(--muted);font-style:italic}
+.pips{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle}
+.pips i{width:8px;height:8px;border:1px solid var(--line);display:inline-block;border-radius:1px}
+.pips i.on{background:var(--accent);border-color:var(--accent)}
+.xp{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
+.xp i{width:4px;height:4px;background:var(--line);display:inline-block}
+.xp i.on{background:var(--gold)}
+.sp .mp{font-family:var(--display);font-size:6.5px;color:var(--mp);flex:none}
+.spellview .eff{font-size:17px;margin:6px 0 10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.box{background:var(--chip);border-left:3px solid var(--good);padding:8px 10px;font-size:15px}
+.box.bad{border-left-color:var(--hp)}
+.box b{font-family:var(--display);font-size:6px;letter-spacing:.08em;display:block;margin-bottom:4px;color:var(--muted)}
 .pockets{display:flex;gap:6px;flex-wrap:wrap}
 .pockets:empty{display:none}
 .pk{display:flex;gap:6px;align-items:center;font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:5px 8px}
@@ -226,6 +247,7 @@ ul.plain{margin:0;padding-left:1.1em}
     <form id="free"><input id="action" type="text" autocomplete="off" placeholder="Or tell me what you do…"><button class="go" id="b-go" type="submit">Go</button></form>
     <div class="bar">
       <button type="button" id="b-sheet">Character</button>
+      <button type="button" id="b-spells">Spells</button>
       <button type="button" id="b-notes">Notes</button>
       <button type="button" id="b-people">People</button>
       <button type="button" id="b-biz" hidden>Business</button>
@@ -253,6 +275,7 @@ ul.plain{margin:0;padding-left:1.1em}
 <script src="doll.js"></script>
 <script src="sprites.js"></script>
 <script src="focus.js"></script>
+<script src="spells.js"></script>
 <script src="voice.js"></script>
 <script>
 (function(){
@@ -329,7 +352,7 @@ function normSheet(s){
     if(!['on','trunk'].includes(it.where))it.where=null;});
   s.business=s.business&&typeof s.business==='object'?s.business:null;
   s.equipment=s.equipment&&typeof s.equipment==='object'?s.equipment:{};
-  s.spells=Array.isArray(s.spells)?s.spells:[]; s.reputation=s.reputation||{}; s.money=s.money&&typeof s.money==='object'?s.money:{g:0,s:0,k:0};
+  s.spells=(Array.isArray(s.spells)?s.spells:[]).map(x=>typeof x==='string'?{name:x,level:'shaky',xp:0}:Object.assign({level:'shaky',xp:0},x)); s.reputation=s.reputation||{}; s.money=s.money&&typeof s.money==='object'?s.money:{g:0,s:0,k:0};
   return s;
 }
 function itemByName(n){return (state.sheet.inventory||[]).find(i=>i.name===n)}
@@ -467,6 +490,7 @@ function buildPrompt(action,dice){
 '\nRobert\'s current look: '+JSON.stringify(state.look||{})+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
+'=== SPELL RULES ===\nSpells Robert knows (name, level, xp): '+JSON.stringify((state.sheet.spells||[]).map(x=>[x.name,x.level,x.xp||0]))+'\nA spell is cast only if he knows it. Each cast costs its Magic; at 0 Magic it fails. Each cast gives the spell +1 xp (report it in changes); 3 xp takes shaky to solid and resets xp; a success by 5 or more takes solid to mastered. Level modifies the check: shaky −2, solid 0, mastered +2, and a mastered spell has its flourish. Situation modifies the check: the right spell in the right place +2, the wrong place −2, and some uses simply fail or backfire as the card says. Use these cards, and invent none: '+JSON.stringify(SPELLS.filter(x=>x.year<=currentYear()+1).map(x=>({spell:x.name,strong:x.strong,weak:x.weak,flourish:x.flourish})))+'\nTeaching: spells arrive on the Year Bible schedule and through the people named on the card. When Robert learns one, add it to spells at shaky with xp 0 and say so in changes. Never teach a spell above his year.',
 '=== CARRYING RULES ===\nRobert can use in a scene only what is ON HIM. New items he picks up are "on" if small (pockets hold two items; one may be a stack of sweets) and otherwise go to the trunk when he next reaches it; say where it went in changes. He may swap items only where the trunk is. Food is perishable. Contraband is confiscated in a Filch search; a quest item is never lost. Condition moves only through events (a fall, a fight, rain, time) and is reported in changes.',
 '=== DICE ===\nTrue random d20 results for this turn, use them in this order for any checks and show the arithmetic in one line inside the scene ("Nerve check: 14 + 5 = 19 against 16. He makes it."): '+dice.join(', ')+'. Do not roll unless the outcome is uncertain and matters. Add practice to the stat used (section 5b).',
 '=== PLAYER ACTION ===\n'+action,
@@ -478,7 +502,7 @@ function buildPrompt(action,dice){
 ' "ask": false,\n'+
 ' "tag": "one of: '+TAGS+'",\n'+
 ' "tod": "day or dusk or night",\n'+
-' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | worn | broken (a broken item gives no bonus until Reparo or a shop fixes it)","tags":["any of: quest (plot item, cannot be lost or sold), contraband (Filch confiscates it if found), perishable (food; goes off after a few days), gift (someone gave it; giving it away has consequences), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
+' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"hp":{"cur","max"},"mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} or null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | worn | broken (a broken item gives no bonus until Reparo or a shop fixes it)","tags":["any of: quest (plot item, cannot be lost or sold), contraband (Filch confiscates it if found), perishable (food; goes off after a few days), gift (someone gave it; giving it away has consequences), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
 ' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
@@ -623,6 +647,36 @@ function showBusiness(){
    (b.notes?'<div class="wide"><div class="k">NOTES</div><div class="v">'+esc(b.notes)+'</div></div>':'')+
    '<div class="wide note">Stock costs 1 Sickle a unit and sells for 2. Weekly sales are a die plus half your Charm. Over ten sales in a week adds Heat; a quiet week removes it.</div></div>');
 }
+function currentYear(){const s=state&&state.sheet;const m=String(s&&s.date||'').match(/20(\d\d)/);if(!m)return 1;const y=2000+(+m[1]);const sep=/(Sept|Oct|Nov|Dec)/i.test(s.date||'');return Math.max(1,Math.min(7,y-2008+(sep?1:0)))}
+function knownSpell(id){const sp=SPELL_BY_ID[id];return (state.sheet.spells||[]).find(x=>x.name.toLowerCase()===sp.name.toLowerCase())}
+function showSpells(){
+  const s=state.sheet, yr=currentYear();
+  const schools=['Charms','Transfiguration','Defence','Hexes'];
+  const lvl={shaky:1,solid:2,mastered:3};
+  const html=schools.map(sc=>{
+    const rows=SPELLS.filter(x=>x.school===sc).map(x=>{
+      const k=knownSpell(x.id); const pre=x.prereq.every(p=>knownSpell(p)); const avail=!k&&pre&&x.year<=yr; const locked=!k&&!avail;
+      const pips='<span class="pips">'+[1,2,3].map(i=>'<i class="'+(k&&lvl[k.level]>=i?'on':'')+'"></i>').join('')+'</span>';
+      const xp=k&&k.level!=='mastered'?'<span class="xp">'+[0,1,2].map(i=>'<i class="'+((k.xp||0)>i?'on':'')+'"></i>').join('')+'</span>':'';
+      const note=k?(k.level+(k.level!=='mastered'?' · practice '+(k.xp||0)+'/3':'')):(avail?x.when:(x.year>yr?'Year '+x.year:'needs '+x.prereq.filter(p=>!knownSpell(p)).map(p=>SPELL_BY_ID[p].name).join(', ')));
+      return '<div class="sp '+(k?'known':avail?'avail':'locked')+'" data-spell="'+x.id+'"><canvas width="12" height="12" data-sp="'+x.id+'"></canvas><div class="in"><div class="nm">'+esc(x.name)+(k?pips+xp:'')+'</div><div class="nt">'+esc(note)+'</div></div><span class="mp">'+x.mp+' MP</span></div>'}).join('');
+    return '<div class="school"><div class="k">'+sc.toUpperCase()+'</div>'+rows+'</div>'}).join('');
+  openModal('SPELLS · YEAR '+yr,'<p class="note">Red pips: shaky, solid, mastered. Gold dots: casts toward the next level. Dashed: can be learned now. Tap a spell for where it works and where it doesn’t.</p>'+html);
+  $('m-body').querySelectorAll('canvas[data-sp]').forEach(c=>drawSpell(c.getContext('2d'),c.dataset.sp));
+  $('m-body').querySelectorAll('[data-spell]').forEach(el=>el.addEventListener('click',()=>showSpell(el.dataset.spell)));
+}
+function showSpell(id){
+  const x=SPELL_BY_ID[id], k=knownSpell(id), yr=currentYear(); const pre=x.prereq.every(p=>knownSpell(p)); const avail=!k&&pre&&x.year<=yr;
+  openModal('SPELL','<div class="itemview spellview"><canvas id="spv" width="12" height="12"></canvas><div><div class="nm">'+esc(x.name)+'</div><div class="meta"><span>'+esc(x.school).toUpperCase()+'</span><span class="b">'+x.mp+' MAGIC</span>'+(k?'<span class="b">'+esc(k.level).toUpperCase()+'</span>':'')+'</div><div class="eff">'+esc(x.effect)+'</div></div></div>'+
+    '<div class="row2"><div class="box"><b>WORKS WELL</b>'+esc(x.strong)+'</div><div class="box bad"><b>WORKS BADLY</b>'+esc(x.weak)+'</div></div>'+
+    '<p class="note" style="margin-top:10px">'+esc(x.flourish)+'</p>'+
+    (x.prereq.length?'<p class="note">Builds on: '+x.prereq.map(p=>SPELL_BY_ID[p].name).join(', ')+'</p>':'')+
+    '<div class="row">'+(k?'<button type="button" class="go" id="spv-cast" style="padding:10px 14px">Cast</button>':(avail?'<button type="button" class="mini" id="spv-learn">Ask to learn it</button>':''))+'<button type="button" class="mini" id="spv-back">Back to spells</button></div>');
+  drawSpell($('spv').getContext('2d'),id);
+  const c=$('spv-cast'); if(c)c.addEventListener('click',()=>{$('modal').hidden=true;input.value='Robert casts '+x.name+' at ';input.focus();input.setSelectionRange(input.value.length,input.value.length)});
+  const l=$('spv-learn'); if(l)l.addEventListener('click',()=>{$('modal').hidden=true;act('Robert tries to get someone to teach him '+x.name+'.')});
+  $('spv-back').addEventListener('click',showSpells);
+}
 function showNotes(){
   const p=(state&&state.progress)||{}, n=p.notes||{};
   const list=(arr,empty)=>Array.isArray(arr)&&arr.length?'<ul class="plain">'+arr.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">'+empty+'</p>';
@@ -665,6 +719,7 @@ form.addEventListener('submit',e=>{e.preventDefault();act(input.value)});
 $('b-stop').addEventListener('click',()=>{if(ctl)ctl.abort()});
 $('b-sheet').addEventListener('click',showSheet);
 $('b-notes').addEventListener('click',showNotes);
+$('b-spells').addEventListener('click',showSpells);
 $('b-settings').addEventListener('click',showSettings);
 $('b-people').addEventListener('click',showPeople);
 $('b-biz').addEventListener('click',showBusiness);
