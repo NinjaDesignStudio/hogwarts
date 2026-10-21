@@ -31,11 +31,12 @@ function digits(cx,n,col){
   cx.fillStyle=col;
   for(const ch of s){FONT[ch].forEach((row,yy)=>{for(let xx=0;xx<3;xx++)if(row[xx]==='1')cx.fillRect(x0+xx,yy-2,1,1)});x0+=4}
 }
-function die(cx,x,y,ang,n){
+function die(cx,x,y,ang,n,digAng,sc){
+  sc=sc||1;
   // shadow
   const hgt=Math.max(0,FLOOR-y);cx.fillStyle='rgba(0,0,0,'+(0.35-Math.min(.25,hgt/200))+')';
   cx.beginPath();cx.ellipse(x,FLOOR+R-2,R*(1-Math.min(.5,hgt/120)),3,0,0,Math.PI*2);cx.fill();
-  cx.save();cx.translate(Math.round(x),Math.round(y));cx.rotate(ang);
+  cx.save();cx.translate(Math.round(x),Math.round(y)-Math.round((sc-1)*8));cx.scale(sc,sc);cx.rotate(ang);
   const V=[...Array(6)].map((_,k)=>{const a=-Math.PI/2+k*Math.PI/3;return [Math.cos(a)*R,Math.sin(a)*R]});
   const T=[-Math.PI/2,Math.PI/6,Math.PI*5/6].map(a=>[Math.cos(a)*R*.62,Math.sin(a)*R*.62]);
   const poly=(pts,fill)=>{cx.beginPath();pts.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fillStyle=fill;cx.fill()};
@@ -45,6 +46,7 @@ function die(cx,x,y,ang,n){
   poly(T,'#f6efdc');
   cx.strokeStyle='#5a4a32';cx.lineWidth=1;cx.beginPath();V.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.stroke();
   cx.strokeStyle='rgba(90,74,50,.6)';cx.beginPath();cx.moveTo(T[0][0],T[0][1]);cx.lineTo(T[1][0],T[1][1]);cx.lineTo(T[2][0],T[2][1]);cx.closePath();cx.stroke();
+  cx.rotate(digAng-ang);
   digits(cx,n,'#8c1f25');
   cx.restore();
 }
@@ -56,30 +58,26 @@ window.showDice=function(c){
     ov.innerHTML='<div class="dice-card"><div class="dice-k">'+c.label+'</div><canvas width="'+W+'" height="'+H+'"></canvas><div class="dice-res"></div><div class="dice-hint">tap to continue</div></div>';
     document.body.appendChild(ov);
     const cv=ov.querySelector('canvas'),cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;
-    let x=-14,y=18,vx=118+Math.random()*30,vy=-30-Math.random()*30,ang=0,va=14+Math.random()*6,face=1+Math.floor(Math.random()*20),flick=0,t=0,settled=false,snap=null,shown=false,done=false,last=performance.now(),closeT=null;
+    let lift=0,x=-14,y=18,vx=118+Math.random()*30,vy=-30-Math.random()*30,ang=0,va=14+Math.random()*6,face=1+Math.floor(Math.random()*20),flick=0,t=0,settled=false,snap=null,shown=false,done=false,last=performance.now(),closeT=null;
     const finish=()=>{if(done)return;done=true;clearTimeout(closeT);ov.classList.add('out');setTimeout(()=>{ov.remove();res()},180)};
     const showResult=()=>{if(shown)return;shown=true;
       ov.querySelector('.dice-res').innerHTML='<b class="o-'+c.outcomeKey+'">'+c.outcome+'</b><span>'+c.sum+'</span>';
       ov.classList.add('done');closeT=setTimeout(finish,2200)};
-    ov.addEventListener('click',()=>{if(!settled){settled=true;snap=0;ang=0;x=Math.max(30,Math.min(130,x));y=FLOOR;face=c.d;showResult()}else finish()});
-    if(reduce){settled=true;x=80;y=FLOOR;face=c.d;table(cx);die(cx,x,y,0,face);showResult();return}
+    ov.addEventListener('click',()=>{if(!shown){settled=true;snap=0;ang=0;lift=1;x=Math.max(30,Math.min(130,x));y=FLOOR;face=c.d;showResult()}else finish()});
+    if(reduce){settled=true;x=80;y=FLOOR;face=c.d;table(cx);die(cx,x,y,0,face,0,1.45);showResult();return}
     const step=now=>{
       if(done)return;
       const dt=Math.min(1/30,(now-last)/1000);last=now;t+=dt;
       if(!settled){
         vy+=520*dt;x+=vx*dt;y+=vy*dt;ang+=va*dt;
         if(y>=FLOOR){y=FLOOR;if(vy>55){clack(vy/500);vy=-vy*.42;vx*=.72;va=va*.6+(Math.random()-.5)*4}else{vy=0;vx*=Math.pow(.04,dt);va=vx/R}}
-        if(x>W-R-4&&vx>0){x=W-R-4;vx=-vx*.5;va=-va*.6;clack(.15)}
+        if(x>W-R-10&&vx>0){x=W-R-10;vx=-vx*.5;va=-va*.6;clack(.15)}
         flick+=dt;if(flick>.06){flick=0;face=1+Math.floor(Math.random()*20)}
-        if((y>=FLOOR&&vy===0&&Math.abs(vx)<8)||t>2.2){settled=true;face=c.d;snap=Math.round(ang/(Math.PI/3))*(Math.PI/3)}
-      }else if(snap!=null){ang+=(snap-ang)*Math.min(1,dt*12);if(Math.abs(snap-ang)<.01){ang=snap;if(!shown)setTimeout(showResult,200)}}
+        if((y>=FLOOR&&vy===0&&Math.abs(vx)<8)||t>2.2){settled=true;face=c.d;snap=Math.round(ang/(Math.PI*2/3))*(Math.PI*2/3);lift=0}
+      }else if(snap!=null){ang+=(snap-ang)*Math.min(1,dt*12);if(Math.abs(snap-ang)<.01){ang=snap;lift=Math.min(1,lift+dt*5);if(lift>=1&&!shown)showResult()}}
       table(cx);
-      const drawAng=settled&&snap!=null?ang:ang;
-      die(cx,x,y,drawAng,face);
-      // keep the number upright once settled
-      if(settled&&snap!=null){cx.save();cx.translate(Math.round(x),Math.round(y));cx.rotate(ang);cx.fillStyle='#f6efdc';
-        const T=[-Math.PI/2,Math.PI/6,Math.PI*5/6].map(a=>[Math.cos(a)*R*.62,Math.sin(a)*R*.62]);cx.beginPath();T.forEach((p,i)=>i?cx.lineTo(p[0],p[1]):cx.moveTo(p[0],p[1]));cx.closePath();cx.fill();cx.restore();
-        cx.save();cx.translate(Math.round(x),Math.round(y));digits(cx,face,'#8c1f25');cx.restore()}
+      const sc=1+.45*(1-Math.pow(1-lift,3));
+      die(cx,x,y,ang,face,settled?0:ang,sc);
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
