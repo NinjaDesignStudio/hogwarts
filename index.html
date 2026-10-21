@@ -433,7 +433,7 @@ function buildPrompt(action,dice){
 '=== ADAPTATIONS AND STANDING RULES ===\n'+g.adaptation,
 '=== CURRENT STATE ===\nCharacter sheet (base values): '+JSON.stringify(state.sheet)+
 '\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+
-'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
+'\nRobert\'s current look: '+JSON.stringify(state.look||{})+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
 '=== DICE ===\nTrue random d20 results for this turn, use them in this order for any checks and show the arithmetic in one line inside the scene ("Nerve check: 14 + 5 = 19 against 16. He makes it."): '+dice.join(', ')+'. Do not roll unless the outcome is uncertain and matters. Add practice to the stat used (section 5b).',
@@ -450,6 +450,7 @@ function buildPrompt(action,dice){
 ' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
+' "look": null, or {"hair_style":"short|messy|parted|curly|long","hair_colour":"black|brown|dark_brown|blond|ginger|grey|auburn","note":"a short visible detail, e.g. a scratch over one eye"} ONLY when the story changed Robert\'s appearance this turn (a haircut, an injury, a growth spurt); otherwise null,\n'+
 ' "focus": {"type":"item|creature|person|none","key":"what this turn is really about, shown as a close-up beside the painting: an item key from this list: '+FOCUS_KEYS.join(', ')+'; or a creature key; or the exact name of a person in cast; pick the thing the player will remember from this scene; change it every turn"},\n'+
 ' "progress": {"beats_done":[],"clues_planted":[],"reveals_spent":[],"branches":[],"adaptations":[],"open_threads":[],"notes":{"suspicions":[],"clues":[],"aims":[]}},\n'+
 ' "log": "one line summarising this turn for the chronicle"}\n'+
@@ -488,6 +489,7 @@ async function act(text){
   const t={n,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
   if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment()}
   if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
+  if(out.look&&typeof out.look==='object'){const L=state.look||{};['hair_style','hair_colour','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(out.look.skin!=null)L.skin=+out.look.skin;state.look=L}
   if(out.progress&&typeof out.progress==='object')state.progress=out.progress;
   state.chronicle=(state.chronicle||[]).concat([String(out.log||t.scene.slice(0,120))]).slice(-400);
   state.n=n; state.updated=t.at;
@@ -515,9 +517,6 @@ function showSheet(){
   const spells=s.spells.length?s.spells.map(x=>esc(x.name)+' <span class="note">('+esc(x.level)+')</span>').join(', '):'none yet';
   const rep=Object.entries(s.reputation).map(([k,v])=>esc(k)+' '+(v>0?'+':'')+esc(v)).join(' · ')||'—';
   const money=(s.money.g?s.money.g+' G ':'')+(s.money.s?s.money.s+' S ':'')+(s.money.k?s.money.k+' K':'')||'nothing';
-  const sw=DOLL.skins.map((c,i)=>'<button type="button" class="sw '+(look.skin===i?'on':'')+'" data-skin="'+i+'" style="background:'+c+'" title="skin"></button>').join('');
-  const hs='<select id="l-style">'+DOLL.hairStyles.map(h=>'<option '+(look.hair_style===h?'selected':'')+'>'+h+'</option>').join('')+'</select>';
-  const hc='<select id="l-colour">'+Object.keys(DOLL.hairColours).map(h=>'<option value="'+h+'" '+(look.hair_colour===h?'selected':'')+'>'+h.replace('_',' ')+'</option>').join('')+'</select>';
   openModal('CHARACTER',
    '<div class="hero"><canvas id="doll" width="32" height="48"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
    '<div class="k">STATS · gold = equipment bonus · thin line = practice toward the next point</div>'+stats+
@@ -527,17 +526,13 @@ function showSheet(){
    '<div><div class="k">WAND</div><div class="v">'+esc(s.wand||'not yet')+'</div></div><div><div class="k">PET</div><div class="v">'+esc(s.pet||'—')+'</div></div>'+
    '<div class="wide"><div class="k">SPELLS</div><div class="v">'+spells+'</div></div>'+
    '<div class="wide"><div class="k">REPUTATION</div><div class="v">'+rep+'</div></div>'+
-   '<div class="wide"><div class="k">LOOK · tap a skin tone, pick hair</div><div class="look">'+sw+'</div><div class="look" style="margin-top:8px"><label class="note" style="font-style:normal">Hair style '+hs+'</label><label class="note" style="font-style:normal">Colour '+hc+'</label></div></div></div>');
+   '<div class="wide"><div class="k">LOOK</div><div class="v">'+esc((look.hair_style||'')+' '+(look.hair_colour||'').replace('_',' ')+' hair')+(look.note?' · '+esc(look.note):'')+'<div class="note">Changes with the story: a haircut, a scar, a growth spurt.</div></div></div></div>');
   drawDoll($('doll').getContext('2d'),look,artMap(),s.house);
   $('m-body').querySelectorAll('canvas.ic').forEach(c=>drawIcon(c.getContext('2d'),c.dataset.ico));
   $('m-body').querySelectorAll('[data-slot]').forEach(el=>el.addEventListener('click',()=>{const sl=el.dataset.slot;if(s.equipment[sl]){delete s.equipment[sl];const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}}));
   $('m-body').querySelectorAll('[data-eq]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.eq];const eqd=SLOTS.find(sl=>s.equipment[sl]===it.name);if(eqd)delete s.equipment[eqd];else{let sl=it.slot;if(sl==='pocket')sl=!s.equipment.pocket1?'pocket1':'pocket2';s.equipment[sl]=it.name}const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})}));
   $('m-body').querySelectorAll('[data-use]').forEach(el=>el.addEventListener('click',()=>{const it=s.inventory[+el.dataset.use];$('modal').hidden=true;act('Robert uses the '+it.name+'.')}));
   $('m-body').querySelectorAll('[data-open]').forEach(el=>{const go=()=>showItem(+el.dataset.open);el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
-  const setLook=(patch)=>{state.look=Object.assign({},state.look||look,patch);const keep=$('m-body').parentElement.scrollTop;showSheet();$('m-body').parentElement.scrollTop=keep;saveState().catch(()=>{})};
-  $('m-body').querySelectorAll('[data-skin]').forEach(el=>el.addEventListener('click',()=>setLook({skin:+el.dataset.skin})));
-  $('l-style').addEventListener('change',e=>setLook({hair_style:e.target.value}));
-  $('l-colour').addEventListener('change',e=>setLook({hair_colour:e.target.value}));
 }
 function showItem(i){
   const s=state.sheet, it=s.inventory[i]; if(!it)return;
