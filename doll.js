@@ -7,8 +7,8 @@ const DOLL={
 };
 function drawDoll(cx,look,eq,house){
   look=look||{}; eq=eq||{};
-  const W=32,H=48; cx.clearRect(0,0,W,H);
-  const r=(x,y,w,h,c)=>{cx.fillStyle=c;cx.fillRect(x,y,w,h)};
+  const W=32,H=54; cx.clearRect(0,0,W,H);
+  const r=(x,y,w,h,c)=>{cx.fillStyle=c;cx.fillRect(x,y+6,w,h)};
   const skin=DOLL.skins[Math.max(0,Math.min(4,look.skin|0))], skinSh=shade(skin,.82);
   const hair=DOLL.hairColours[look.hair_colour]||DOLL.hairColours.dark_brown, hairHi=shade(hair,1.25);
   const [h1,h2]=DOLL.house[house]||['#3a3a44','#9a9aa0'];
@@ -64,7 +64,7 @@ function drawDoll(cx,look,eq,house){
   if(st==='long'){r(9,6,3,16,hair);r(20,6,3,16,hair);r(9,21,2,2,hair);r(21,21,2,2,hair);r(10,8,1,1,hairHi);r(21,10,1,1,hairHi)}
   // hat
   // hats sit on top of the head; hair below the brim stays visible
-  if(head==='pointed_hat'){r(8,4,16,2,'#1a1418');r(10,2,12,2,'#1a1418');r(12,0,8,2,'#1a1418');r(14,-2,4,2,'#1a1418');r(8,4,16,1,'#2a2430');r(10,3,12,1,h1)}
+  if(head==='pointed_hat'){r(7,4,18,2,'#1a1418');r(10,2,12,2,'#1a1418');r(11,0,10,2,'#1a1418');r(12,-2,7,2,'#1a1418');r(14,-4,4,2,'#1a1418');r(16,-6,2,2,'#1a1418');r(7,4,18,1,'#2a2430');r(10,3,12,1,h1);r(12,1,1,1,'#2a2430')}
   if(head==='winter_hat'){r(10,1,12,5,h1);r(10,4,12,2,h2);r(14,-1,4,2,h2)}
   // companion
   if(comp==='owl'){r(2,12,4,5,'#6b4a30');r(2,12,4,1,'#8a6a40');r(2,13,1,1,'#ffd36a');r(5,13,1,1,'#ffd36a');r(3,14,2,1,'#f0a030');r(2,17,1,1,'#3a2616');r(5,17,1,1,'#3a2616')}

@@ -141,7 +141,7 @@ details.earlier .turn + .turn::before{display:none}
 .k{font-family:var(--display);font-size:6.5px;color:var(--muted);letter-spacing:.08em;margin:0 0 5px}
 .v{font-size:17px;line-height:1.35}
 .hero{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
-.hero canvas{width:96px;height:144px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.hero canvas{width:96px;height:162px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .hero .info{flex:1 1 auto;min-width:0}
 .hero .nm{font-size:20px;font-weight:600;line-height:1.2}
 .hero .hs{color:var(--muted);font-style:italic;margin-bottom:10px}
@@ -518,7 +518,7 @@ function showSheet(){
   const rep=Object.entries(s.reputation).map(([k,v])=>esc(k)+' '+(v>0?'+':'')+esc(v)).join(' · ')||'—';
   const money=(s.money.g?s.money.g+' G ':'')+(s.money.s?s.money.s+' S ':'')+(s.money.k?s.money.k+' K':'')||'nothing';
   openModal('CHARACTER',
-   '<div class="hero"><canvas id="doll" width="32" height="48"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
+   '<div class="hero"><canvas id="doll" width="32" height="54"></canvas><div class="info"><div class="nm">'+esc(s.name||'Robert Thunder')+'</div><div class="hs">'+esc(s.house||'unsorted')+' · '+esc(s.date||'')+'</div>'+gauge('hp','HEALTH',s.hp.cur,s.hp.max)+gauge('mp','MAGIC',s.mp.cur,s.mp.max)+'</div></div>'+
    '<div class="k">STATS · gold = equipment bonus · thin line = practice toward the next point</div>'+stats+
    '<div class="grid"><div class="wide"><div class="k">EQUIPMENT · tap a slot to unequip</div><div class="slots">'+slots+'</div></div>'+
    '<div class="wide"><div class="k">INVENTORY</div><div class="inv">'+inv+'</div></div>'+
