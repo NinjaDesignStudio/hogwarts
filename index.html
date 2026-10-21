@@ -42,8 +42,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .caption .date{color:#d9c58a}
 .brand{position:absolute;left:max(10px,env(safe-area-inset-left,0px));top:8px;z-index:1;padding:5px 7px;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.55);border-radius:2px;line-height:1.5;display:flex;gap:10px;align-items:center}
 .brand .g{display:inline-flex;gap:3px;align-items:center}
-.listen{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:8px;z-index:2;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.6);border:1px solid rgba(243,234,208,.35);border-radius:2px;padding:6px 8px;line-height:1.5;cursor:pointer}
-.listen.on{background:var(--accent);border-color:var(--accent)}
+.vnote:empty{display:none}
+.present .vnote{flex-basis:100%}
+.listen{font-family:var(--display);font-size:7.5px;letter-spacing:.08em;color:var(--accent);background:transparent;border:1px solid var(--accent);border-radius:3px;padding:8px 12px;line-height:1.5;cursor:pointer}
+.listen.on{background:var(--accent);color:#fff}
+.vnote{font-size:14px;color:var(--muted);font-style:italic}
 .brand .g i{display:inline-block;width:4px;height:6px;background:#3a3a44}
 .brand .g i.on{background:var(--hp)} .brand .g.m i.on{background:#5f9ad0}
 
@@ -64,7 +67,7 @@ details.earlier .turn + .turn::before{display:none}
 .turn p{margin:0 0 .95em;text-wrap:pretty}
 .turn p:last-child{margin-bottom:0}
 .turn.latest p.lede::first-letter{font-family:var(--body);font-weight:600;font-size:3.1em;line-height:.8;float:left;padding:6px 7px 0 0;color:var(--accent)}
-.present{display:flex;flex-wrap:wrap;gap:10px 14px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px dashed var(--line)}
+.present{display:flex;flex-wrap:wrap;gap:10px 14px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px dashed var(--line);align-items:center}
 .who{display:flex;flex-direction:column;align-items:center;gap:4px;width:52px}
 .who canvas{width:48px;height:48px;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .who canvas.cr{width:40px;height:40px;margin-top:4px;margin-bottom:4px}
@@ -200,7 +203,6 @@ ul.plain{margin:0;padding-left:1.1em}
   <header class="top">
     <canvas id="scene" width="320" height="180" aria-label="Pixel scene"></canvas>
     <div class="brand"><span>ROBERT THUNDER</span><span class="g h" id="g-hp"></span><span class="g m" id="g-mp"></span></div>
-    <button type="button" class="listen" id="b-listen">▶ Listen</button>
     <div class="caption"><span id="cap-place"></span><span id="cap-date" class="date"></span></div>
   </header>
   <main id="page" aria-live="polite">
@@ -353,7 +355,10 @@ function renderPresent(t){
   const d=document.createElement('div');d.className='present';let any=false;
   (t.present||[]).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=24;c.height=24;drawPortrait(c.getContext('2d'),sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Mrs|Mr|Madam|Sir|Dame|Professor)\s+/,'').split(' ')[0];l.title=n;w.appendChild(l);d.appendChild(w)});
   (t.creatures||[]).forEach(k=>{any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=16;c.height=16;c.className='cr';drawCreature(c.getContext('2d'),k);w.appendChild(c);const l=document.createElement('span');l.textContent=k;w.appendChild(l);d.appendChild(w)});
-  if(!any)d.hidden=true; return d;
+  const spacer=document.createElement('div');spacer.style.flex='1';d.appendChild(spacer);
+  const lb=document.createElement('button');lb.type='button';lb.className='listen';lb.id='b-listen';lb.textContent=speaking?'■ Stop':'▶ Listen';lb.addEventListener('click',speakCurrent);d.appendChild(lb);
+  const vn=document.createElement('span');vn.className='vnote';vn.id='vstat-inline';d.appendChild(vn);
+  return d;
 }
 function deriveFocus(t){
   if(t.creatures&&t.creatures.length)return {type:'creature',key:t.creatures[0]};
@@ -599,16 +604,16 @@ async function saveBlock(){
 
 /* ---------- narrator ---------- */
 const V=window.HOG.voice; let speaking=false;
-function stopSpeaking(){V.stop();speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='▶ Listen'}
+function lbtn(on){const b=$('b-listen');if(!b)return;b.classList.toggle('on',on);b.textContent=on?'■ Stop':'▶ Listen'}
+function stopSpeaking(){V.stop();speaking=false;lbtn(false)}
 async function speakCurrent(){
   if(!turns.length)return; if(speaking){stopSpeaking();return}
-  speaking=true;$('b-listen').classList.add('on');$('b-listen').textContent='■ Stop';
+  speaking=true;lbtn(true);
   await V.speak(narrationText(turns[turns.length-1]));
-  speaking=false;$('b-listen').classList.remove('on');$('b-listen').textContent='▶ Listen';
+  speaking=false;lbtn(false);
 }
 function narrationText(t){return String(t.scene||'').split(/\n\s*\n/).map(b=>b.replace(/\*/g,'').trim()).filter(Boolean).join('\n\n')}
-$('b-listen').addEventListener('click',speakCurrent);
-V.onStatus((s,m)=>{const el=$('vstat');if(el)el.textContent=(s==='loading'||s==='error')?m:(s==='ready'?'Narrator ready':'')});
+V.onStatus((s,m)=>{const txt=(s==='loading'||s==='error')?m:'';const el=$('vstat');if(el)el.textContent=s==='ready'?'Narrator ready':txt;const il=$('vstat-inline');if(il)il.textContent=txt});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking)stopSpeaking()});
 
 /* ---------- wiring ---------- */
