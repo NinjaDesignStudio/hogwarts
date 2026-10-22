@@ -247,6 +247,7 @@ details.earlier .turn + .turn::before{display:none}
 .assess .a-why{font-size:15px;color:var(--muted);margin:8px 0 12px}
 .assess .row{display:flex;gap:8px}
 .assess .go{padding:11px 16px}
+#setup a,.settings a{color:var(--accent)}
 .err{border:1px solid #b5524c;background:#f6e2dc;color:#5a1f1a;padding:12px 14px;border-radius:4px;font-size:16px}.err b{display:block;font-size:17px}.err p{margin:4px 0 0}.err small{display:block;margin-top:8px;font:12px/1.4 ui-monospace,monospace;opacity:.8;word-break:break-word}.err .mini{margin-top:10px}
 .you .rollline{display:block;font-style:normal;font-family:var(--display);font-size:7px;letter-spacing:.05em;margin-top:8px;color:var(--muted)}
 .rollline b{font-weight:normal}.o-great b,.o-ok b,b.o-great,b.o-ok{color:var(--good)}.o-great b,b.o-great{color:var(--gold)}.o-fail b,b.o-fail{color:var(--hp)}.o-bad b,b.o-bad{color:var(--hp)}
@@ -313,7 +314,10 @@ ul.plain{margin:0;padding-left:1.1em}
   </div></footer>
   <div id="setup" hidden><div class="card">
     <h2><span>HOGWARTS</span></h2>
-    <p class="note" id="setup-msg">Two things, once. They stay on this phone.</p>
+    <p class="note" id="setup-msg">Played before on another device? Paste your cloud save token and leave the rest blank.</p>
+    <div id="s-tok-wrap"><div class="k" style="margin-top:14px">CLOUD SAVE TOKEN</div>
+    <input id="s-tok" type="password" autocomplete="off" placeholder="ghp_…">
+    <p class="note">A GitHub token with only the gist box ticked. <a id="s-tok-link" target="_blank" rel="noopener">Make one</a>. First time? Make one too, fill in the two below, and your save follows you everywhere.</p></div>
     <div id="s-pass-wrap"><div class="k" style="margin-top:14px">STORY PASSPHRASE</div>
     <input id="s-pass" type="password" autocomplete="off" placeholder="the passphrase Claude gave you"></div>
     <div id="s-key-wrap"><div class="k" style="margin-top:14px">ANTHROPIC API KEY</div>
@@ -334,6 +338,7 @@ ul.plain{margin:0;padding-left:1.1em}
 </div>
 
 <script src="shim.js"></script>
+<script src="sync.js"></script>
 <script src="art.js"></script>
 <script src="doll.js"></script>
 <script src="sprites.js"></script>
@@ -646,6 +651,11 @@ function errInfo(e){const m=String(e&&e.message||'');
   if(e.code==='invalid_json')return ['The reply came back garbled.','Pick the same option again.','',false];
   if(e.code==='refused')return ['Claude declined that one.','Try a different action.','',false];
   return ['Claude returned an error.','Try again. If it keeps happening, send Claude the line below.',m,false]}
+let pushT=null;
+function cloudPush(){if(!window.SYNC||!window.SYNC.on())return;clearTimeout(pushT);pushT=setTimeout(()=>window.SYNC.push().then(r=>{if(r==='behind')cloudAhead()}).catch(()=>{}),400)}
+function cloudAhead(){const d=document.createElement('div');d.className='turn';
+  d.innerHTML='<div class="err"><b>Your cloud save is further along.</b><p>Another device played on, so this page was not uploaded and the cloud is untouched. Loading the cloud save replaces this device’s last page.</p><button type="button" class="mini">Load the cloud save</button></div>';
+  log.appendChild(d);scrollEnd();d.querySelector('button').addEventListener('click',async()=>{try{await window.SYNC.pull(true);location.reload()}catch(e){alert(e.message)}})}
 function showErr(e){const [t,h,m,key]=errInfo(e);const d=document.createElement('div');d.className='turn';
   d.innerHTML='<div class="err"><b>'+esc(t)+'</b><p>'+esc(h)+'</p>'+(m?'<small>'+esc(m)+'</small>':'')+(key?'<button type="button" class="mini">Open Settings</button>':'')+'</div>';
   log.appendChild(d);const b=d.querySelector('button');if(b)b.addEventListener('click',showSettings)}
@@ -703,7 +713,7 @@ async function act(text,check){
   try{$('saved').textContent='SAVING…';await db.doc('turns/'+tid(n)).set(t);await saveState()}catch(e){$('saved').textContent='NOT SAVED';const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">That turn could not be saved. If you reload, it will be lost.</p>';log.appendChild(d)}
 }
 let saving=null;
-async function saveState(){if(saving)await saving.catch(()=>{});saving=db.doc('game/state').set(JSON.parse(JSON.stringify(state)));try{await saving;$('saved').textContent='SAVED'}catch(e){$('saved').textContent='NOT SAVED ('+(e&&e.code||'error')+')';throw e}return saving}
+async function saveState(){if(saving)await saving.catch(()=>{});saving=db.doc('game/state').set(JSON.parse(JSON.stringify(state)));try{await saving;$('saved').textContent='SAVED';cloudPush()}catch(e){$('saved').textContent='NOT SAVED ('+(e&&e.code||'error')+')';throw e}return saving}
 
 /* ---------- character screen ---------- */
 function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false;$('modal').querySelector('.card').scrollTop=0;wireTabs()}
@@ -782,15 +792,29 @@ function showSettings(){
    '<div class="vstat" id="vstat"></div>'+
    '<div class="k">API KEY</div><input id="st-key" type="password" autocomplete="off">'+
    '<div class="row"><button type="button" class="mini" id="st-test">Test voice</button><button type="button" class="mini" id="st-export">Export save</button><button type="button" class="mini" id="st-import">Import save</button><button type="button" class="mini" id="st-reset">Start over</button></div>'+
-   '<p class="note">Saves live on this phone. Export before switching devices.</p></div>');
+   '<div class="k">CLOUD SAVE</div><div id="st-cloud"></div></div>');
+  const drawCloud=()=>{const SY=window.SYNC,el=$('st-cloud');if(!SY||!el)return;
+    if(SY.on()){el.innerHTML='<p class="note">On. Every page uploads, and each device loads the newest save when it opens. '+esc(SY.status()||'')+'</p><div class="row"><button type="button" class="mini" id="cl-now">Upload now</button><button type="button" class="mini" id="cl-off">Unlink this device</button></div>';
+      $('cl-now').addEventListener('click',async()=>{try{const r=await SY.push();if(r==='behind'){$('modal').hidden=true;cloudAhead()}else $('cl-now').textContent='Uploaded'}catch(e){$('cl-now').textContent=e.message}});
+      $('cl-off').addEventListener('click',()=>{SY.disconnect();drawCloud()});return}
+    el.innerHTML='<p class="note">Off: the save lives only in this browser. Paste a GitHub token with only the gist box ticked (<a href="'+SY.TOKEN_URL+'" target="_blank" rel="noopener">make one</a>), and the save, key and passphrase follow you to any device.</p><input id="cl-tok" type="password" autocomplete="off" placeholder="ghp_…"><div class="row"><button type="button" class="mini" id="cl-go">Link</button></div><p class="note" id="cl-msg"></p>';
+    $('cl-go').addEventListener('click',async()=>{const m=$('cl-msg');m.textContent='Looking for your cloud save…';
+      try{const r=await SY.connect($('cl-tok').value);
+        if(!r.found){await SY.push(true);m.textContent='Linked. This device is now your cloud save.';drawCloud();return}
+        const here=SY.snapshot();
+        m.innerHTML='Found a cloud save at page '+(r.remote.n||0)+'. This device is at page '+(here.n||0)+'.<div class="row"><button type="button" class="mini" id="cl-use-cloud">Use the cloud save</button><button type="button" class="mini" id="cl-use-here">Keep this device</button></div>';
+        $('cl-use-cloud').addEventListener('click',()=>{SY.apply(r.remote);location.reload()});
+        $('cl-use-here').addEventListener('click',async()=>{await SY.push(true);m.textContent='Linked. The cloud now holds this device.';drawCloud()});
+      }catch(e){m.textContent=e.message}});
+  };drawCloud();
   $('st-len').value=(state&&state.prefs&&state.prefs.length)||'long'; $('st-len').addEventListener('change',()=>{if(!state)return;state.prefs={length:$('st-len').value};saveState().catch(()=>{})});
   $('st-model').value=S.model; $('st-think').checked=!!S.thinking; $('st-voice').value=S.voice; $('st-auto').checked=!!S.autoRead; $('st-rate').value=S.rate||1; $('st-key').value=S.apiKey||'';
-  const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();window.HOG.saveSettings()};
+  const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();window.HOG.saveSettings();if(window.SYNC&&window.SYNC.on())window.SYNC.push().catch(()=>{})};
   ['st-model','st-think','st-voice','st-auto','st-rate','st-key'].forEach(id=>$(id).addEventListener('change',save));
   $('st-test').addEventListener('click',()=>{save();window.HOG.voice.speak('The owl arrived at a quarter past seven, which Graham Thunder considered unprofessional.')});
   $('st-export').addEventListener('click',()=>{const txt=window.HOG.exportSave();navigator.clipboard.writeText(txt).then(()=>{$('st-export').textContent='Copied'}).catch(()=>{openModal('EXPORT','<pre class="save">'+esc(txt)+'</pre>')})});
-  $('st-import').addEventListener('click',()=>{openModal('IMPORT SAVE','<textarea id="imp" style="width:100%;height:160px;font:14px monospace"></textarea><div class="row"><button class="go" id="imp-go" type="button" style="padding:10px 14px">Import</button></div>');$('imp-go').addEventListener('click',()=>{try{window.HOG.importSave($('imp').value);location.reload()}catch(e){alert('Could not read that save')}})});
-  $('st-reset').addEventListener('click',()=>{openModal('START OVER','<p>This wipes the save on this phone and begins again from the letter. The story documents stay.</p><div class="row"><button class="go" id="rs-go" type="button" style="padding:10px 14px">Yes, start over</button></div>');$('rs-go').addEventListener('click',async()=>{window.HOG.resetGame();await seedInitial(true);location.reload()})});
+  $('st-import').addEventListener('click',()=>{openModal('IMPORT SAVE','<textarea id="imp" style="width:100%;height:160px;font:14px monospace"></textarea><div class="row"><button class="go" id="imp-go" type="button" style="padding:10px 14px">Import</button></div>');$('imp-go').addEventListener('click',()=>{try{window.HOG.importSave($('imp').value);(window.SYNC&&window.SYNC.on()?window.SYNC.push(true):Promise.resolve()).catch(()=>{}).then(()=>location.reload())}catch(e){alert('Could not read that save')}})});
+  $('st-reset').addEventListener('click',()=>{openModal('START OVER','<p>This wipes the save (and the cloud save, if linked) and begins again from the letter. The story documents stay.</p><div class="row"><button class="go" id="rs-go" type="button" style="padding:10px 14px">Yes, start over</button></div>');$('rs-go').addEventListener('click',async()=>{window.HOG.resetGame();await seedInitial(true);try{if(window.SYNC&&window.SYNC.on())await window.SYNC.push(true)}catch(e){}location.reload()})});
   const vs=window.HOG.voice; $('vstat').textContent=vs.status==='ready'?'Narrator ready':vs.statusMsg;
 }
 function showBusiness(){
@@ -1035,22 +1059,37 @@ function storeBundle(plain,enc,pass){
   localStorage.setItem('hog.gmv',String(enc.v||1)); localStorage.setItem('hog.pass',pass); gm=null;
 }
 async function setupFlow(){
-  const S=window.HOG.settings;
-  let haveGM=!!localStorage.getItem('hog.gm'); const haveKey=!!S.apiKey;
+  const S=window.HOG.settings, SY=window.SYNC;
+  // a device already linked to the cloud takes the newer save before anything reads it
+  if(SY&&SY.on()){try{await SY.pull()}catch(e){}}
+  let haveGM=!!localStorage.getItem('hog.gm'); let haveKey=!!S.apiKey;
   let enc=null, stale=false;
   try{enc=await fetchBundle();stale=haveGM&&String(enc.v||1)!==(localStorage.getItem('hog.gmv')||'1')}catch(e){}
-  if(stale){const pass=localStorage.getItem('hog.pass');
-    if(pass){try{storeBundle(await window.HOG.decryptBundle(enc,pass),enc,pass);stale=false}catch(e){}}}
+  const tryPass=async()=>{const pass=localStorage.getItem('hog.pass');if(!pass||!enc)return false;try{storeBundle(await window.HOG.decryptBundle(enc,pass),enc,pass);return true}catch(e){return false}};
+  if(stale||!haveGM){if(await tryPass()){stale=false;haveGM=true}}
   if(haveGM&&haveKey&&!stale)return true;
   const needPass=!haveGM||stale;
-  $('setup').hidden=false; $('s-key').value=S.apiKey||'';
-  $('s-pass-wrap').hidden=!needPass; $('s-key-wrap').hidden=haveKey;
+  $('setup').hidden=false; $('s-key').value=S.apiKey||''; $('s-tok-link').href=SY?SY.TOKEN_URL:'#';
+  $('s-pass-wrap').hidden=!needPass; $('s-key-wrap').hidden=haveKey; $('s-tok-wrap').hidden=!SY||SY.on();
   if(stale&&haveKey)$('setup-msg').textContent='The story documents were updated. Enter the passphrase once more to load them. Your save is untouched.';
   return new Promise(res=>{
     $('s-go').addEventListener('click',async()=>{
       $('s-err').textContent='';
+      const tok=$('s-tok').value.trim();
+      if(tok&&SY&&!SY.on()){
+        $('s-go').disabled=true;$('s-err').textContent='Looking for your cloud save…';
+        try{const r=await SY.connect(tok);
+          if(r.found){SY.apply(r.remote);
+            if(await tryPass()||(enc=enc||await fetchBundle().catch(()=>null),await tryPass())){$('setup').hidden=true;res(true);return}
+            $('s-err').textContent='Found your save, but the story file did not open. Enter the passphrase.';$('s-pass-wrap').hidden=false;$('s-go').disabled=false;return}
+          $('s-err').textContent='Token works. No cloud save yet, so fill in the passphrase and key below: they go to the cloud with your first turn.';
+          $('s-pass-wrap').hidden=false;$('s-key-wrap').hidden=false;$('s-go').disabled=false;
+          if(!$('s-key').value.trim()||(needPass&&!$('s-pass').value.trim()))return;
+        }catch(e){$('s-err').textContent=e.message||'Could not connect.';$('s-go').disabled=false;return}
+        $('s-err').textContent='';
+      }
       const key=haveKey?S.apiKey:$('s-key').value.trim(); if(!/^sk-ant-/.test(key)){$('s-err').textContent='That does not look like an Anthropic API key.';return}
-      if(needPass){
+      if(needPass||!localStorage.getItem('hog.gm')){
         const pass=$('s-pass').value.trim().toLowerCase();
         try{if(!enc)enc=await fetchBundle();storeBundle(await window.HOG.decryptBundle(enc,pass),enc,pass)}
         catch(e){$('s-err').textContent=enc?'Wrong passphrase.':'Could not load the story file. Check the connection and try again.';return}
@@ -1071,11 +1110,17 @@ async function boot(){
     state.look=normLook(state.look);
         const q=await db.collection('turns').orderBy('n','desc').limit(6).get();
     turns=q.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
-    renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';
+    renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';cloudPush();
     if(!(state.look.created>=2))await showCreator();
     setTimeout(()=>{try{window.preloadDice&&window.preloadDice()}catch(e){}},2500);
+    let hiddenAt=0;document.addEventListener('visibilitychange',async()=>{
+      if(document.hidden){hiddenAt=Date.now();return}
+      if(!window.SYNC||!window.SYNC.on()||Date.now()-hiddenAt<15000||busy.hidden===false)return;
+      try{if(await window.SYNC.pull())location.reload()}catch(e){}
+    });
   }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}
 }
+if(window.SYNC)window.SYNC.onStatus(t=>{const el=$('saved');if(el&&t)el.textContent=t});
 boot();
 })();
 </script>
