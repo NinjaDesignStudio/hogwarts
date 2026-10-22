@@ -53,9 +53,9 @@ async function callModel(input,opts,wantJson){
   opts=opts||{};
   if(!settings.apiKey)throw mkErr('not_granted','No API key');
   const messages=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:m.content}));
-  const body={model:opts.fastModel||settings.model,max_tokens:opts.maxTokens||(wantJson?7000:1500),stream:true,messages};
+  const body={model:opts.fastModel||settings.model,max_tokens:opts.maxTokens||(wantJson?16000:1500),stream:true,messages};
   if(wantJson&&settings.thinking&&!opts.fastModel)body.thinking={type:'enabled',budget_tokens:3000};
-  if(body.thinking)body.max_tokens=Math.max(body.max_tokens,body.thinking.budget_tokens+5000);
+  if(body.thinking)body.max_tokens=Math.max(body.max_tokens,body.thinking.budget_tokens+16000);
   let res;
   try{
     res=await fetch(API,{method:'POST',signal:opts.signal,headers:{'content-type':'application/json','x-api-key':settings.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
@@ -89,9 +89,12 @@ async function callModel(input,opts,wantJson){
   let v=tryParse(text);
   if(v===undefined){const m=text.match(/```(?:json)?\s*([\s\S]*?)```/);if(m)v=tryParse(m[1])}
   if(v===undefined){const a=text.indexOf('{'),b=text.lastIndexOf('}');if(a>=0&&b>a)v=tryParse(text.slice(a,b+1))}
-  if(v===undefined)throw mkErr('invalid_json','could not parse',text);
+  if(v===undefined){const a=text.indexOf('{'),b=text.lastIndexOf('}');if(a>=0&&b>a)v=tryParse(repairJson(text.slice(a,b+1)))}
+  if(v===undefined){try{localStorage.setItem('hog.lastbad',text.slice(-20000))}catch(e){}throw mkErr(truncated?'truncated':'invalid_json',truncated?'reply cut off at the length limit':'could not parse',text)}
   return v;
 }
+// escape raw control characters inside strings and drop trailing commas
+function repairJson(s){let o='',str=false,esc=false;for(const ch of s){if(str){if(esc){esc=false;o+=ch;continue}if(ch==='\\'){esc=true;o+=ch;continue}if(ch==='"'){str=false;o+=ch;continue}if(ch==='\n'){o+='\\n';continue}if(ch==='\r'){continue}if(ch==='\t'){o+='\\t';continue}o+=ch}else{if(ch==='"')str=true;o+=ch}}return o.replace(/,\s*([}\]])/g,'$1')}
 const sample=async(input,opts)=>callModel(input,opts,false);
 sample.json=async(input,opts)=>callModel(input,opts,true);
 sample.limits=async()=>({maxPromptBytes:262144});

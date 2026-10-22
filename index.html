@@ -640,6 +640,7 @@ function errInfo(e){const m=String(e&&e.message||'');
   if(/credit/i.test(m))return ['Your API account is out of credit.','Add credit at platform.claude.com, under Billing, then try again.',m,false];
   if(e.code==='rate_limited')return ['Claude is rate-limiting this key.','Wait a minute, then try again.',m,false];
   if(/failed to fetch|load failed|networkerror|network/i.test(m))return ['Could not reach Claude.','Check your connection, then try again.','',false];
+  if(e.code==='truncated')return ['The reply ran out of room before it finished.','Pick the same option again. If it keeps happening, tell Claude.','',false];
   if(e.code==='invalid_json')return ['The reply came back garbled.','Pick the same option again.','',false];
   if(e.code==='refused')return ['Claude declined that one.','Try a different action.','',false];
   return ['Claude returned an error.','Try again. If it keeps happening, send Claude the line below.',m,false]}
