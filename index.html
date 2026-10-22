@@ -69,11 +69,11 @@ details.earlier .turn + .turn::before{display:none}
 .turn.latest p.lede::first-letter{font-family:var(--body);font-weight:600;font-size:3.1em;line-height:.8;float:left;padding:6px 7px 0 0;color:var(--accent)}
 .present{display:flex;flex-wrap:wrap;gap:10px 14px;margin:0 0 16px;padding-bottom:12px;border-bottom:1px dashed var(--line);align-items:center}
 .who{display:flex;flex-direction:column;align-items:center;gap:4px;width:52px}
-.who canvas{width:48px;height:48px;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.who canvas{width:64px;height:64px;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .who canvas.cr{width:40px;height:40px;margin-top:4px;margin-bottom:4px}
-.who span{font-family:var(--display);font-size:6px;letter-spacing:.03em;color:var(--muted);text-align:center;line-height:1.4;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who span{font-family:var(--display);font-size:6px;letter-spacing:.03em;color:var(--muted);text-align:center;line-height:1.4;max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .person{display:flex;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:8px 0}
-.person canvas{width:48px;height:48px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
+.person canvas{width:64px;height:64px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .person .pn{font-size:17px;line-height:1.25}
 .person .pr{font-size:14.5px;color:var(--muted);font-style:italic;line-height:1.3}
 .person .pi{flex:1;min-width:0}
@@ -136,7 +136,7 @@ details.earlier .turn + .turn::before{display:none}
 #creator{position:fixed;inset:0;z-index:25;background:var(--paper);overflow-y:auto;-webkit-overflow-scrolling:touch}
 #creator .cc-top{position:sticky;top:0;z-index:1;display:flex;gap:14px;align-items:flex-end;justify-content:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 12px;background:#0b1026;border-bottom:3px solid var(--accent)}
 #cc-doll{width:96px;height:162px;image-rendering:pixelated}
-#cc-face{width:120px;height:120px;image-rendering:pixelated;background:#141a36;border:2px solid #c9a24a;border-radius:4px;margin-bottom:4px}
+#cc-face{width:128px;height:128px;image-rendering:pixelated;background:#141a36;border:2px solid #c9a24a;border-radius:4px;margin-bottom:4px}
 #creator .cc-body{max-width:560px;margin:0 auto;padding:16px 16px 110px}
 #creator h2{font-family:var(--display);font-size:10px;letter-spacing:.08em;color:var(--accent);margin:4px 0 8px}
 .cc-sum{font-size:16px;line-height:1.4;font-style:italic;color:var(--ink);margin:0 0 6px}
@@ -323,7 +323,7 @@ ul.plain{margin:0;padding-left:1.1em}
     <p class="note" id="s-err" style="color:var(--accent)"></p>
   </div></div>
   <div id="creator" hidden>
-    <div class="cc-top"><canvas id="cc-doll" width="32" height="54"></canvas><canvas id="cc-face" width="16" height="16"></canvas></div>
+    <div class="cc-top"><canvas id="cc-doll" width="32" height="54"></canvas><canvas id="cc-face" width="64" height="64"></canvas></div>
     <div class="cc-body"><h2>WHO ARE YOU?</h2>
       <p class="cc-sum" id="cc-sum"></p>
       <p class="note">You set this once. After today only the story changes your look: a haircut, a scar, new glasses.</p>
@@ -337,6 +337,7 @@ ul.plain{margin:0;padding-left:1.1em}
 <script src="art.js"></script>
 <script src="doll.js"></script>
 <script src="sprites.js"></script>
+<script src="portraits.js"></script>
 <script src="focus.js"></script>
 <script src="spells.js"></script>
 <script src="dice.js"></script>
@@ -368,7 +369,7 @@ function draw(){
   (m.smoke||[]).forEach(([x,y],i)=>{for(let k=0;k<3;k++){const ph=((f/3|0)+i*9+k*7)%24; cx.fillStyle='rgba(200,200,215,'+(0.5-ph/48)+')'; cx.fillRect(x+Math.round(Math.sin((ph+k*5)/3)*1.5)-1+k,y-ph,2,2)}});
   cx.restore();
 }
-const focusCv=document.createElement('canvas'); focusCv.width=32; focusCv.height=32; const portCv=document.createElement('canvas'); portCv.width=24; portCv.height=24; const crCv=document.createElement('canvas'); crCv.width=16; crCv.height=16;
+const focusCv=document.createElement('canvas'); focusCv.width=32; focusCv.height=32; const portCv=document.createElement('canvas'); portCv.width=64; portCv.height=64; const crCv=document.createElement('canvas'); crCv.width=16; crCv.height=16;
 let focus=null;
 function setFocus(f){focus=f&&f.type&&f.type!=='none'&&f.key?f:null}
 function drawInset(){
@@ -382,7 +383,7 @@ function drawInset(){
   cx.fillStyle='#d9a94b'; cx.fillRect(X,Y,Wd,1); cx.fillRect(X,Y,1,Ht);
   cx.imageSmoothingEnabled=false;
   try{
-    if(focus.type==='person'){const sp=(state&&state.cast||{})[focus.key]; if(!sp)return; drawPortrait(portCv.getContext('2d'),sp); cx.drawImage(portCv,X+2,Y+2,96,96)}
+    if(focus.type==='person'){const sp=(state&&state.cast||{})[focus.key]; if(!sp)return; drawFace(portCv.getContext('2d'),focus.key,sp); cx.drawImage(portCv,8,4,48,48,X+2,Y+2,96,96)}
     else if(focus.type==='creature'){drawCreature(crCv.getContext('2d'),focus.key); cx.drawImage(crCv,X+2,Y+2,96,96)}
     else {drawFocus(focusCv.getContext('2d'),FOCUS_KEYS.includes(focus.key)?focus.key:'letter'); cx.drawImage(focusCv,X+2,Y+2,96,96)}
   }catch(e){}
@@ -482,7 +483,7 @@ function nextEvent(){const d=storyDate();if(d==null)return null;const dt=new Dat
 function renderPresent(t){
   const d=document.createElement('div');d.className='present';let any=false;
   const ne=nextEvent(); if(ne){const w=document.createElement('div');w.className='nextev';const when=ne.days===0?'today':ne.days===1?'tomorrow':ne.days<15?'in '+ne.days+' days':'in '+Math.round(ne.days/7)+' weeks';w.innerHTML='NEXT · <b>'+esc(ne.name)+'</b> · '+when;d.appendChild(w)}
-  (t.present||[]).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=24;c.height=24;drawPortrait(c.getContext('2d'),sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Mrs|Mr|Madam|Sir|Dame|Professor)\s+/,'').split(' ')[0];l.title=n;w.appendChild(l);d.appendChild(w)});
+  (t.present||[]).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=64;c.height=64;drawFace(c.getContext('2d'),n,sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Mrs|Mr|Madam|Sir|Dame|Professor)\s+/,'').split(' ')[0];l.title=n;w.appendChild(l);d.appendChild(w)});
   (t.creatures||[]).forEach(k=>{any=true;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=16;c.height=16;c.className='cr';drawCreature(c.getContext('2d'),k);w.appendChild(c);const l=document.createElement('span');l.textContent=k;w.appendChild(l);d.appendChild(w)});
   const spacer=document.createElement('div');spacer.style.flex='1';d.appendChild(spacer);
   const lb=document.createElement('button');lb.type='button';lb.className='listen';lb.id='b-listen';lb.textContent=speaking?'■ Stop':'▶ Listen';lb.addEventListener('click',speakCurrent);d.appendChild(lb);
@@ -623,7 +624,7 @@ check?checkBlock(check):'',
 ' "tag": "one of: '+TAGS+'",\n'+
 ' "tod": "day or dusk or night",\n'+
 ' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"health":"fine | hurt | hospital","mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"spells_heard":[{"name","from":"where he heard of it"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} ONLY on prized (+1) or rare (+2) items, else null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | broken (broken: no bonus and no use until Reparo or a shop fixes it)","tags":["any of: quest (plot item, never lost or sold), contraband (Filch confiscates it if found), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
-' "cast": [{"name","role","house","age","skin","hair_style","hair_colour","robes","head","extra","relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
+' "cast": [{"name","role","house","age","gender":"m|f","skin","hair_style","hair_colour","eye_colour":"brown|dark_brown|hazel|green|blue|grey","face":"round|square|long|heart|oval","robes","head","extra","features":["any of: glasses, beard, moustache, stubble, freckles, scar, earring, missing_ear"],"relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
 ' "look": null, or only the fields that changed, ONLY when the story changed Robert\'s appearance this turn (a haircut, an injury, a growth spurt, new or broken glasses): {"hair_style":"short|messy|parted|swept|spiky|curly|long|buzz|bob|ponytail|plaits","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum","glasses":"none|round|square","marks":["the full list after the change, from: freckles, mole, scar"],"height":"small|average|tall","note":"a short visible detail, e.g. a scratch over one eye"}; skin and eye colour never change; otherwise null,\n'+
@@ -824,9 +825,9 @@ function showPeople(){
   const groups=()=>{const g=keys.filter(k=>!used.has(k));return g.length?'<div class="k" style="margin-top:16px">STANDING</div>'+g.map(k=>{const v=Math.max(-3,Math.min(3,Math.round(+rep[k]||0)));return '<div class="person grp"><div><div class="pn">'+esc(k)+'</div></div>'+repMeter(v)+'</div>'}).join(''):''};
   if(!names.length)return openModal('JOURNAL',tabsBar('journal','people')+legend+'<p class="note">Nobody yet. They arrive as you meet them.</p>'+groups());
   const rows=names.map(n=>{const sp=cast[n];const k=repKeyFor(n,keys);if(k)used.add(k);const v=k!=null?Math.max(-3,Math.min(3,Math.round(+rep[k]||0))):null;
-    return '<div class="person"><canvas width="24" height="24" data-who="'+esc(n)+'"></canvas><div class="pi"><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(v!=null?repMeter(v):'<div class="repm"><span class="rw">not yet</span></div>')+'</div>'}).join('');
+    return '<div class="person"><canvas width="64" height="64" data-who="'+esc(n)+'"></canvas><div class="pi"><div class="pn">'+esc(n)+'</div><div class="pr">'+esc(sp.role||'')+(sp.house&&!['staff','family','shop','ministry','ghost','portrait'].includes(sp.house)?' · '+esc(sp.house):'')+'</div></div>'+(v!=null?repMeter(v):'<div class="repm"><span class="rw">not yet</span></div>')+'</div>'}).join('');
   openModal('JOURNAL',tabsBar('journal','people')+legend+rows+groups());
-  $('m-body').querySelectorAll('canvas[data-who]').forEach(c=>drawPortrait(c.getContext('2d'),cast[c.dataset.who]));
+  $('m-body').querySelectorAll('canvas[data-who]').forEach(c=>drawFace(c.getContext('2d'),c.dataset.who,cast[c.dataset.who]));
 }
 function showRecap(){journalTab='recap';const c=(state&&state.chronicle)||[];openModal('JOURNAL',tabsBar('journal','recap')+(c.length?'<ol style="padding-left:1.2em;margin:0">'+c.slice(-12).map(l=>'<li>'+esc(l)+'</li>').join('')+'</ol>':'<p class="note">Nothing yet.</p>'))}
 async function saveBlock(){
@@ -896,6 +897,11 @@ function normIdentity(i){i=Object.assign({first:'Robert',gender:'boy',romance:''
 function ID(){return normIdentity(state&&state.identity)}
 function PN(){return ID().first}
 function PR(){return ID().gender==='girl'?{he:'she',him:'her',his:'her',He:'She',HE:'SHE'}:{he:'he',him:'him',his:'his',He:'He',HE:'HE'}}
+function drawFace(ctx,name,sp){if(window.drawPortraitHQ)drawPortraitHQ(ctx,Object.assign({name},sp||{}));else drawPortrait(ctx,sp)}
+function playerSpec(l,i){l=l||normLook(state.look);i=i||ID();const r=(state&&state.sheet&&state.sheet.equipment&&artMap().robes)||'muggle_clothes';
+  const robes=['school_robes','dress_robes','quidditch_robes','winter_cloak'].includes(r)?r:'muggle_clothes';const hs=String(state&&state.sheet&&state.sheet.house||'');
+  const house=['Gryffindor','Slytherin','Ravenclaw','Hufflepuff'].find(x=>hs.startsWith(x))||null;
+  return {name:(i.first||'Robert')+' Thunder',gender:i.gender==='girl'?'f':'m',age:'child',skin_hq:l.skin,hair_style:l.hair_style,hair_colour:l.hair_colour,eye_colour:l.eye_colour,robes,house,features:(l.marks||[]).concat(l.glasses&&l.glasses!=='none'?['glasses']:[])}}
 function dollLook(l){return Object.assign({},l,{gender:ID().gender})}
 function nameSwap(s){const f=PN();if(f==='Robert')return s;return s.replace(/\bRobert\b/g,f).replace(/\bROBERT\b/g,f.toUpperCase())}
 function identityBlock(){
@@ -948,7 +954,7 @@ function showCreator(){
       const DL=Object.assign({},L,{gender:I.gender});
       drawDoll($('cc-doll').getContext('2d'),DL,eq,state.sheet.house);
       drawDoll(off.getContext('2d'),DL,eq,state.sheet.house);
-      const f=$('cc-face').getContext('2d');f.imageSmoothingEnabled=false;f.fillStyle='#141a36';f.fillRect(0,0,16,16);f.drawImage(off,8,8,16,16,0,0,16,16);
+      drawPortraitHQ($('cc-face').getContext('2d'),playerSpec(L,I));
       const keep=state.identity; state.identity=I; $('cc-sum').textContent=(I.first?I.first.charAt(0).toUpperCase()+I.first.slice(1):'…')+' Thunder. '+describeLook(L); state.identity=keep;
     };
     const build=()=>{
