@@ -292,9 +292,18 @@ function render(sp,name){
   oc.putImageData(id,0,0);
   return out;
 }
+// match "Professor Longbottom", "Hagrid" or "Madam Pomfrey" to a hand-drawn face, only when the match is unique
+const TITLES=/\b(professor|prof|madam|madame|sir|dame|headmistress|headmaster|curator|lady|lord|the)\b/g;   // Mr/Mrs stay: Mr Mallory is not Corin
+const toks=n=>String(n||'').toLowerCase().replace(/[^a-z' -]/g,' ').replace(TITLES,' ').split(/[\s-]+/).filter(Boolean);
+let handIdx=null,handN=-1;
+function handFor(name){const H=window.HAND_PORTRAITS||{};if(H[name])return H[name];
+  const keys=Object.keys(H);if(handN!==keys.length){handIdx=keys.map(k=>[toks(k),H[k]]);handN=keys.length}
+  const t=toks(name);if(!t.length)return null;
+  const hits=new Set(handIdx.filter(([kt])=>t.every(x=>kt.includes(x))).map(([,f])=>f));
+  return hits.size===1?[...hits][0]:null}
 function drawPortraitHQ(ctx,sp,opt){
   sp=sp||{};const name=sp.name||(opt&&opt.name)||'';
-  const hand=window.HAND_PORTRAITS&&window.HAND_PORTRAITS[name];if(hand){ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,S,S);hand(ctx);return}
+  const hand=handFor(name);if(hand){ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,S,S);hand(ctx);return}
   const key=name+'|'+JSON.stringify(sp);let cv=cache.get(key);
   if(!cv){try{cv=render(sp,name)}catch(e){console.error(e);return}cache.set(key,cv);if(cache.size>80)cache.delete(cache.keys().next().value)}
   ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,S,S);ctx.drawImage(cv,0,0);
