@@ -247,7 +247,7 @@ details.earlier .turn + .turn::before{display:none}
 .assess .a-why{font-size:15px;color:var(--muted);margin:8px 0 12px}
 .assess .row{display:flex;gap:8px}
 .assess .go{padding:11px 16px}
-.opt .s.safe{color:var(--muted);border-style:dashed}
+.err{border:1px solid #b5524c;background:#f6e2dc;color:#5a1f1a;padding:12px 14px;border-radius:4px;font-size:16px}.err b{display:block;font-size:17px}.err p{margin:4px 0 0}.err small{display:block;margin-top:8px;font:12px/1.4 ui-monospace,monospace;opacity:.8;word-break:break-word}.err .mini{margin-top:10px}
 .you .rollline{display:block;font-style:normal;font-family:var(--display);font-size:7px;letter-spacing:.05em;margin-top:8px;color:var(--muted)}
 .rollline b{font-weight:normal}.o-great b,.o-ok b,b.o-great,b.o-ok{color:var(--good)}.o-great b,b.o-great{color:var(--gold)}.o-fail b,b.o-fail{color:var(--hp)}.o-bad b,b.o-bad{color:var(--hp)}
 #dice{position:fixed;inset:0;z-index:40;background:rgba(6,5,10,.74);display:flex;align-items:center;justify-content:center;padding:16px;transition:opacity .18s}
@@ -540,7 +540,7 @@ function renderOptions(t){
   (t.options||[]).slice(0,5).forEach((o,i)=>{
     const txt=typeof o==='string'?o:String(o.text||''); const chk=checkFor(o);
     const b=document.createElement('button');b.type='button';b.className='opt';
-    const badge=chk?'<span class="s r c-'+chanceClass(chk.pct)+'"><b>'+chk.df.toUpperCase()+' · '+chk.pct+'%</b>'+(chk.stat?'<i>'+chk.stat.toUpperCase()+'</i>':'')+'</span>':'<span class="s safe">NO ROLL</span>';
+    const badge=chk?'<span class="s r c-'+chanceClass(chk.pct)+'"><b>'+chk.df.toUpperCase()+' · '+chk.pct+'%</b>'+(chk.stat?'<i>'+chk.stat.toUpperCase()+'</i>':'')+'</span>':'';
     b.innerHTML='<span class="n">'+(i+1)+'</span><span class="t">'+esc(txt)+'</span>'+badge;
     b.addEventListener('click',()=>{if(busy.hidden===false)return;const c=chk?rollCheck(checkFor(o)):null;if(c&&window.showDice)window.showDice(c);act(txt,c)});optsEl.appendChild(b)});
   $('lead').textContent=t.ask?'SAY IT IN YOUR OWN WORDS':'WHAT DO YOU DO?';
@@ -635,6 +635,17 @@ check?checkBlock(check):'',
 'Set "ask" true and leave options empty only when you want the player to answer in his own words. The notes in progress are what ROBERT knows and suspects, written for him to read, never GM knowledge. Bracketed player commands ([skip], [harder], [easier], [bible check]) are out of character: answer them briefly in "scene" and keep the story where it was.'
   ].join('\n\n').replace(/[\s\S]*/,nameSwap);
 }
+function errInfo(e){const m=String(e&&e.message||'');
+  if(e.code==='not_granted')return ['Claude rejected your API key.','Open Settings and paste the key again.',m,true];
+  if(/credit/i.test(m))return ['Your API account is out of credit.','Add credit at platform.claude.com, under Billing, then try again.',m,false];
+  if(e.code==='rate_limited')return ['Claude is rate-limiting this key.','Wait a minute, then try again.',m,false];
+  if(/failed to fetch|load failed|networkerror|network/i.test(m))return ['Could not reach Claude.','Check your connection, then try again.','',false];
+  if(e.code==='invalid_json')return ['The reply came back garbled.','Pick the same option again.','',false];
+  if(e.code==='refused')return ['Claude declined that one.','Try a different action.','',false];
+  return ['Claude returned an error.','Try again. If it keeps happening, send Claude the line below.',m,false]}
+function showErr(e){const [t,h,m,key]=errInfo(e);const d=document.createElement('div');d.className='turn';
+  d.innerHTML='<div class="err"><b>'+esc(t)+'</b><p>'+esc(h)+'</p>'+(m?'<small>'+esc(m)+'</small>':'')+(key?'<button type="button" class="mini">Open Settings</button>':'')+'</div>';
+  log.appendChild(d);const b=d.querySelector('button');if(b)b.addEventListener('click',showSettings)}
 async function act(text,check){
   text=String(text||'').trim(); if(!text||!sampleFn||busy.hidden===false)return;
   input.value='';
@@ -660,8 +671,7 @@ async function act(text,check){
     out=await sampleFn.json(buildPrompt(text,dice,check),{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}renderLive(live,sc)}else{busyText.textContent='Writing…'}}catch(e){}}});
   }catch(e){
     setBusy(false);pending.remove();live.remove();
-    const msg={cancelled:'Stopped.',not_granted:'This page needs permission to use Claude. Reopen it and allow it when asked.',rate_limited:'Claude is busy or your usage limit is reached. Try again in a while.',invalid_json:'The reply came back malformed. Try the action again.',refused:'Claude declined that one. Try a different action.'}[e.code]||'Something went wrong on the way to Hogwarts. Try again.';
-    if(e.code!=='cancelled'){const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">'+esc(msg)+'</p>';log.appendChild(d)}
+    if(e.code!=='cancelled')showErr(e);
     if(turns.length)renderOptions(turns[turns.length-1]);scrollEnd();return;
   }
   if(!out||typeof out!=='object'||!out.scene){setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
