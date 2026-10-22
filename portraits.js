@@ -294,6 +294,7 @@ function render(sp,name){
 }
 function drawPortraitHQ(ctx,sp,opt){
   sp=sp||{};const name=sp.name||(opt&&opt.name)||'';
+  const hand=window.HAND_PORTRAITS&&window.HAND_PORTRAITS[name];if(hand){ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,S,S);hand(ctx);return}
   const key=name+'|'+JSON.stringify(sp);let cv=cache.get(key);
   if(!cv){try{cv=render(sp,name)}catch(e){console.error(e);return}cache.set(key,cv);if(cache.size>80)cache.delete(cache.keys().next().value)}
   ctx.imageSmoothingEnabled=false;ctx.clearRect(0,0,S,S);ctx.drawImage(cv,0,0);
