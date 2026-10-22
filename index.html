@@ -578,6 +578,16 @@ function checkBlock(c){
   const P=PR(), line=(c.stat||'Luck')+' check: '+c.d+' + '+c.mod+' = '+c.total+' against '+c.target+'. '+P.He+(c.margin>=0?' makes it.':' misses.');
   return '=== THE CHECK (the page rolled it for the option the player picked; binding) ===\nStat: '+(c.stat||'none')+(c.stat?', effective '+c.statV:'')+(c.pen?', hurt −2':'')+'. Difficulty: '+c.df+', target '+c.target+'. The d20 came up '+c.d+'. Result: '+c.outcome+' ('+(c.margin>=0?'by ':'missed by ')+Math.abs(c.margin)+'). GREAT SUCCESS: it works and something extra goes right. BAD FAILURE: it fails and something extra goes wrong.\nPut this roll line in the scene exactly: "'+line+'" Then narrate this outcome. Do not roll this check again and do not add modifiers to it. Any other roll this turn uses the DICE. If the player typed this action and the world you know makes the goal impossible, a success means '+P.he+' gets out clean and learns why it cannot work, and a failure means it costs '+P.him+'.';
 }
+function standingBlock(){
+  const rep=(state.sheet&&state.sheet.reputation)||{}, keys=Object.keys(rep).filter(k=>Math.abs(+rep[k]||0)>=1);
+  if(!keys.length)return '=== STANDING ===\nNobody has a standing score yet. Add a person to sheet.reputation the first time they matter, and move a score one step at most per scene, on what '+PN()+' did, never on dice.';
+  const here=((turns[turns.length-1]||{}).present||[]).map(n=>n.toLowerCase());
+  const isHere=k=>here.some(n=>n.includes(k.toLowerCase())||k.toLowerCase().includes(n.split(' ').pop()));
+  const line=k=>{const v=Math.round(+rep[k]);return k+' '+(v>0?'+':'')+v+(isHere(k)?' (in this scene)':'')};
+  const pos=keys.filter(k=>+rep[k]>0).sort((a,b)=>rep[b]-rep[a]), neg=keys.filter(k=>+rep[k]<0).sort((a,b)=>rep[a]-rep[b]);
+  return '=== STANDING (make it count) ===\nAllies: '+(pos.map(line).join('; ')||'none')+'\nAgainst: '+(neg.map(line).join('; ')||'none')+
+   '\nStanding must change what happens, not only how people talk. At +1 a person is warmer and remembers a kindness. At +2 they help unprompted when they are about: a warning, a cover story, a door held, a word put in. At +3 they turn up when it counts and take a risk for '+PN()+'. At -1 they are cool and quick to suspect. At -2 they work against '+PN()+': report, block, spread a story, side with a rival. At -3 they act on it. When someone at +2 or more, or -2 or less, is in the scene or would plausibly hear of it, show it this turn. Fold their help or hindrance into the difficulty of any check (a friend\'s help +2 is the usual size). Unlock a character\'s next arc step from the Year Bible only when their score reaches it. Move a score one step at most per person per scene, on what '+PN()+' did, and report it in changes.';
+}
 function lastOptions(){const t=turns[turns.length-1];const o=(t&&t.options)||[];if(!o.length)return '(none: a narrative page or free text)';return o.map((x,i)=>typeof x==='string'?(i+1)+'. '+x:(i+1)+'. '+x.text+(x.stat?' ['+x.stat+(x.difficulty?', '+x.difficulty:'')+']':'')).join('\n')}
 function buildPrompt(action,dice,check){
   const g=gm, len=(state.prefs&&state.prefs.length)||'long';
@@ -594,6 +604,7 @@ identityBlock(),
 '=== CURRENT STATE ===\nCharacter sheet (base values): '+JSON.stringify(state.sheet)+
 '\nEFFECTIVE STATS after equipment, use these for every check: '+JSON.stringify(eff)+'\nEquipped now: '+JSON.stringify(eq)+'\nON HIM (usable this scene): '+state.sheet.inventory.filter(i=>i.where==='on').map(i=>i.name+(i.qty>1?' x'+i.qty:'')+(i.condition!=='good'?' ('+i.condition+')':'')).join(', ')+'\nIN HIS TRUNK (not to hand unless he is where the trunk is): '+state.sheet.inventory.filter(i=>i.where!=='on').map(i=>i.name).join(', ')+'\nTrunk reachable in the current place: '+(trunkHere()?'yes':'no')+
 '\nRobert\'s look (the player chose it; describe him consistently and never contradict it): '+describeLook(normLook(state.look))+' '+JSON.stringify(Object.fromEntries(Object.entries(normLook(state.look)).filter(([k])=>!['created','v'].includes(k))))+'\nKnown cast (already have sprites; do not resend unless changed): '+Object.keys(state.cast||{}).join(', ')+'\nBible progress: '+JSON.stringify(state.progress||{})+'\nScene length setting: '+len+' ('+(len==='long'?'500-700':len==='short'?'120-180':'250-450')+' words).',
+standingBlock(),
 '=== CHRONICLE (one line per past turn, oldest first) ===\n'+(chron||'(none yet)'),
 '=== RECENT TURNS (verbatim) ===\n'+(recent||'(none)'),
 '=== OPTIONS SHOWN LAST TURN ===\n'+lastOptions()+'\nIf the player action is one of these, check it with exactly the stat and difficulty shown.',
