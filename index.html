@@ -631,7 +631,7 @@ check?checkBlock(check):'',
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
 ' "look": null, or only the fields that changed, ONLY when the story changed Robert\'s appearance this turn (a haircut, an injury, a growth spurt, new or broken glasses): {"hair_style":"short|messy|parted|swept|spiky|curly|long|buzz|bob|ponytail|plaits","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum","glasses":"none|round|square","marks":["the full list after the change, from: freckles, mole, scar"],"height":"small|average|tall","note":"a short visible detail, e.g. a scratch over one eye"}; skin and eye colour never change; otherwise null,\n'+
 ' "focus": {"type":"item|creature|person|none","key":"what this turn is really about, shown as a close-up beside the painting: an item key from this list: '+FOCUS_KEYS.join(', ')+'; or a creature key; or the exact name of a person in cast; pick the thing the player will remember from this scene; change it every turn"},\n'+
-' "progress": {"beats_done":[],"clues_planted":[],"reveals_spent":[],"branches":[],"adaptations":[],"open_threads":[],"notes":{"suspicions":[],"clues":[],"aims":[]}},\n'+
+' "progress": null if nothing in it changed this turn, otherwise the FULL object (never a partial one): {"beats_done":[],"clues_planted":[],"reveals_spent":[],"branches":[],"adaptations":[],"open_threads":[],"notes":{"suspicions":[],"clues":[],"aims":[]}},\n'+
 ' "log": "one line summarising this turn for the chronicle"}\n'+
 'Set "ask" true and leave options empty only when you want the player to answer in his own words. The notes in progress are what ROBERT knows and suspects, written for him to read, never GM knowledge. Bracketed player commands ([skip], [harder], [easier], [bible check]) are out of character: answer them briefly in "scene" and keep the story where it was.'
   ].join('\n\n').replace(/[\s\S]*/,nameSwap);
@@ -640,7 +640,8 @@ function errInfo(e){const m=String(e&&e.message||'');
   if(e.code==='not_granted')return ['Claude rejected your API key.','Open Settings and paste the key again.',m,true];
   if(/credit/i.test(m))return ['Your API account is out of credit.','Add credit at platform.claude.com, under Billing, then try again.',m,false];
   if(e.code==='rate_limited')return ['Claude is rate-limiting this key.','Wait a minute, then try again.',m,false];
-  if(/failed to fetch|load failed|networkerror|network/i.test(m))return ['Could not reach Claude.','Check your connection, then try again.','',false];
+  if(e.code==='network'||/failed to fetch|load failed|networkerror/i.test(m))return ['Lost the connection to Claude.','It tried three times. Keep the game on screen while a page is being written: switching apps pauses it on iPhone. Then pick the option again.','',false];
+  if(e.code==='overloaded')return ['Claude is overloaded right now.','Wait a minute, then pick the option again.',m,false];
   if(e.code==='truncated')return ['The reply ran out of room before it finished.','Pick the same option again. If it keeps happening, tell Claude.','',false];
   if(e.code==='invalid_json')return ['The reply came back garbled.','Pick the same option again.','',false];
   if(e.code==='refused')return ['Claude declined that one.','Try a different action.','',false];
@@ -668,10 +669,21 @@ async function act(text,check){
   optsEl.innerHTML='';setBusy(true,'The quill is thinking…');scrollTo(pending);
   const live=document.createElement('div');live.className='live';live.hidden=true;log.appendChild(live);let liveShown=false;
   ctl=new AbortController();
-  let out;
+  let out,wake=null;
   try{
-    out=await sampleFn.json(buildPrompt(text,dice,check),{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}renderLive(live,sc)}else{busyText.textContent='Writing…'}}catch(e){}}});
+    try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
+    const prompt=buildPrompt(text,dice,check);
+    // a dropped connection (often iOS pausing the page while you are in another app) retries by itself, twice
+    for(let tries=0;;tries++){
+      try{out=await sampleFn.json(prompt,{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}renderLive(live,sc)}else{busyText.textContent='Writing…'}}catch(e){}}});break}
+      catch(e){if(tries>=2||!['network','overloaded'].includes(e.code))throw e;
+        live.hidden=true;liveShown=false;setBusy(true,e.code==='network'?'The connection dropped. Trying again…':'Claude is busy. Trying again…');
+        if(document.hidden)await new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',f);r()}};document.addEventListener('visibilitychange',f)});
+        await new Promise(r=>setTimeout(r,e.code==='network'?800:4000))}
+    }
+    try{wake&&wake.release()}catch(e){}
   }catch(e){
+    try{wake&&wake.release()}catch(_){}
     setBusy(false);pending.remove();live.remove();
     if(e.code!=='cancelled')showErr(e);
     if(turns.length)renderOptions(turns[turns.length-1]);scrollEnd();return;

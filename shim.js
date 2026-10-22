@@ -59,18 +59,20 @@ async function callModel(input,opts,wantJson){
   let res;
   try{
     res=await fetch(API,{method:'POST',signal:opts.signal,headers:{'content-type':'application/json','x-api-key':settings.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
-  }catch(e){ if(e&&e.name==='AbortError')throw mkErr('cancelled','aborted'); throw mkErr('upstream_error',String(e)) }
+  }catch(e){ if(e&&e.name==='AbortError')throw mkErr('cancelled','aborted'); throw mkErr('network',String(e)) }
   if(!res.ok){
     let msg='';try{msg=(await res.json()).error.message}catch(e){}
     if(res.status===400&&/thinking/i.test(msg)&&body.thinking){delete body.thinking;settings.thinking=false;window.HOG.saveSettings();return callModel(input,opts,wantJson)}
     if(res.status===401)throw mkErr('not_granted','Bad API key: '+msg);
     if(res.status===429)throw mkErr('rate_limited',msg||'rate limited');
     if(res.status===400&&/credit/i.test(msg))throw mkErr('rate_limited',msg);
+    if(res.status===529||res.status>=500)throw mkErr('overloaded',(res.status+' '+msg).trim());
     throw mkErr('upstream_error',(res.status+' '+msg).trim());
   }
   const reader=res.body.getReader(); const td=new TextDecoder(); let buf='', text='', truncated=false;
   while(true){
-    const {value,done}=await reader.read(); if(done)break;
+    let r;try{r=await reader.read()}catch(e){if((e&&e.name==='AbortError')||(opts.signal&&opts.signal.aborted))throw mkErr('cancelled','aborted');throw mkErr('network','stream dropped: '+String(e))}
+    const {value,done}=r; if(done)break;
     buf+=td.decode(value,{stream:true});
     let idx;
     while((idx=buf.indexOf('\n\n'))>=0){
@@ -79,7 +81,7 @@ async function callModel(input,opts,wantJson){
       let ev; try{ev=JSON.parse(line.slice(5).trim())}catch(e){continue}
       if(ev.type==='content_block_delta'&&ev.delta&&ev.delta.type==='text_delta'){text+=ev.delta.text; if(opts.onText)try{opts.onText({text,delta:ev.delta.text})}catch(e){}}
       if(ev.type==='message_delta'&&ev.delta&&ev.delta.stop_reason==='max_tokens')truncated=true;
-      if(ev.type==='error')throw mkErr('upstream_error',JSON.stringify(ev.error));
+      if(ev.type==='error')throw mkErr(ev.error&&/overloaded|api_error/.test(ev.error.type||'')?'overloaded':'upstream_error',JSON.stringify(ev.error));
     }
   }
   if(!text.trim())throw mkErr('empty_completion','no text');
