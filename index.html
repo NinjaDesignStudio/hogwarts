@@ -29,7 +29,7 @@
   --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b;
   --accent:#d94b52; --gold:#d9a94b; --hp:#d9554f; --mp:#5f9ad0; --good:#6fb26a; color-scheme:dark }
 
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18.5px;line-height:1.52;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:calc(18.5px*var(--fs,1));line-height:1.52;-webkit-text-size-adjust:100%}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0b1026}
 #app{min-height:100%;max-width:720px;margin:0 auto;background:var(--paper);box-shadow:0 0 0 1px var(--line)}
 .top{position:relative;aspect-ratio:16/9;max-width:100%;overflow:hidden;background:#0b1026;line-height:0;border-bottom:2px solid var(--gold)}
@@ -86,13 +86,14 @@ details.earlier .turn + .turn::before{display:none}
 .item canvas.ic{width:36px;height:36px;flex:none;image-rendering:pixelated;background:var(--chip);border:1px solid var(--line);border-radius:3px}
 .status{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 .status.above{margin:0 0 14px}
-.status span{font-family:var(--body);font-size:15.5px;line-height:1.3;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-left:3px solid var(--gold);padding:5px 9px;border-radius:3px}
+.status span{font-family:var(--body);font-size:calc(15.5px*var(--fs,1));line-height:1.3;color:var(--ink);background:var(--chip);border:1px solid var(--line);border-left:3px solid var(--gold);padding:5px 9px;border-radius:3px}
 .status span.dn{border-left-color:var(--hp)} .status span.up{border-left-color:var(--good)}
 #busy{max-width:36em;margin:26px auto 0;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-style:italic;display:flex;gap:12px;align-items:center}
 #busy .candle{width:20px;height:20px;flex:none;image-rendering:pixelated}
 #busy .stop{margin-left:auto;font-style:normal}
 .empty{max-width:34em;margin:30px auto;text-align:center;color:var(--muted);font-style:italic}
-.note{color:var(--muted);font-style:italic;font-size:16.5px}
+.note{color:var(--muted);font-style:italic;font-size:calc(16.5px*var(--fs,1))}
+.finishing{animation:fin 1.6s ease-in-out infinite}@keyframes fin{50%{opacity:.45}}
 .live{max-width:36em;margin:22px auto 0}
 .live p{margin:0 0 .95em}
 .live .cursor{color:var(--accent);font-style:normal}
@@ -105,7 +106,7 @@ details.earlier .turn + .turn::before{display:none}
 .dock .lead{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted)}
 #options{display:flex;flex-direction:column;gap:7px}
 #options:empty{display:none}
-.opt{appearance:none;text-align:left;font:inherit;font-size:17px;line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);
+.opt{appearance:none;text-align:left;font:inherit;font-size:calc(17px*var(--fs,1));line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);
   border-radius:3px;padding:10px 12px 10px 12px;display:flex;gap:12px;align-items:baseline;cursor:pointer;transition:border-color .12s,background .12s,transform .06s}
 .opt:hover{border-color:var(--gold);background:var(--chip)}
 .opt:active{transform:translateY(1px)}
@@ -564,13 +565,13 @@ function partialScene(raw){
   for(;i<raw.length;i++){const ch=raw[i];
     if(esc){ if(ch==='n')out+='\n'; else if(ch==='t')out+='\t'; else if(ch==='u'){const hex=raw.slice(i+1,i+5); if(/^[0-9a-fA-F]{4}$/.test(hex)){out+=String.fromCharCode(parseInt(hex,16)); i+=4} } else out+=ch; esc=false; continue }
     if(ch==='\\'){esc=true;continue}
-    if(ch==='"')break;
+    if(ch==='"'){partialScene.done=true;return out}
     out+=ch }
-  return out;
+  partialScene.done=false;return out;
 }
-function renderLive(el,text){
+function renderLive(el,text,done){
   const blocks=String(text||'').split(/\n\s*\n/).map(s=>s.trim()).filter(Boolean);
-  el.innerHTML=blocks.map(b=>b.split('\n').map(l=>'<p>'+esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')+'</p>').join('')).join('')+'<p class="cursor">▍</p>';
+  el.innerHTML=blocks.map(b=>b.split('\n').map(l=>'<p>'+esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')+'</p>').join('')).join('')+(done?'<p class="note finishing">Finishing the page and your choices…</p>':'<p class="cursor">▍</p>');
 }
 
 /* ---------- the GM call ---------- */
@@ -630,7 +631,7 @@ check?checkBlock(check):'',
 ' "ask": false,\n'+
 ' "tag": "one of: '+TAGS+'",\n'+
 ' "tod": "day or dusk or night",\n'+
-' "sheet": the full sheet carried forward with only this turn\'s changes applied: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"health":"fine | hurt | hospital","mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"spells_heard":[{"name","from":"where he heard of it"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} ONLY on prized (+1) or rare (+2) items, else null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | broken (broken: no bonus and no use until Reparo or a shop fixes it)","tags":["any of: quest (plot item, never lost or sold), contraband (Filch confiscates it if found), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
+' "sheet": ONLY the top-level sheet fields that changed this turn, each given whole: e.g. {"date":"…","location":"…","money":{"g":0,"s":0,"k":0}}; if any item changed, the whole "inventory" array; if a stat practice moved, the whole "practice" object; {} if nothing changed. Never resend unchanged fields. The fields are: {"name","house","date":"in-story date e.g. Saturday 2 August 2008","location":"short place name","stats":{Spellwork,Brains,Nerve,Charm,Grit base values},"practice":{same keys, 0-10},"stat_use":{same keys, running count of checks this term},"health":"fine | hurt | hospital","mp":{"cur","max"},"spells":[{"name","level":"shaky|solid|mastered","xp":0}],"spells_heard":[{"name","from":"where he heard of it"}],"inventory":[{"name","grade":"common|useful|prized|rare","slot":"wand|robes|head|neck|hands|feet|companion|broom|pocket|null","bonus":{"stat","n"} ONLY on prized (+1) or rare (+2) items, else null,"note":"one line","art":"an art key from section 5b or none","icon":"an icon key from section 8 for items without a slot, else none","qty":1,"where":"on (in a pocket or hand) | trunk","condition":"good | broken (broken: no bonus and no use until Reparo or a shop fixes it)","tags":["any of: quest (plot item, never lost or sold), contraband (Filch confiscates it if found), stock (business inventory)"],"text":"for anything readable, the full text as Robert would read it, with line breaks; omit for other items"}],"business":null or {"stock":0,"stock_item":"Chocolate Frogs","heat":0,"sales_this_week":0,"profit_total_sickles":0,"supplier":"","notes":"one line"} once the side business exists,"equipment":{slot:item name, only when you hand out starting kit; otherwise copy what you were given},"money":{"g","s","k"},"house_points","reputation":{name:number},"wand","pet","offences":0},\n'+
 ' "cast": [{"name","role","house","age","gender":"m|f","skin","hair_style","hair_colour","eye_colour":"brown|dark_brown|hazel|green|blue|grey","face":"round|square|long|heart|oval","robes","head","extra","features":["any of: glasses, beard, moustache, stubble, freckles, scar, earring, missing_ear"],"relationship"} for each named person appearing for the FIRST time this turn (section 8); empty array otherwise],\n'+
 ' "present": ["names of the people in this scene, known or new"],\n'+
 ' "creatures": ["creature keys in this scene, from section 8; usually empty"],\n'+
@@ -659,6 +660,7 @@ function cloudAhead(){const d=document.createElement('div');d.className='turn';
 function showErr(e){const [t,h,m,key]=errInfo(e);const d=document.createElement('div');d.className='turn';
   d.innerHTML='<div class="err"><b>'+esc(t)+'</b><p>'+esc(h)+'</p>'+(m?'<small>'+esc(m)+'</small>':'')+(key?'<button type="button" class="mini">Open Settings</button>':'')+'</div>';
   log.appendChild(d);const b=d.querySelector('button');if(b)b.addEventListener('click',showSettings)}
+let inTurn=false, liveText='';
 async function act(text,check){
   text=String(text||'').trim(); if(!text||!sampleFn||busy.hidden===false)return;
   input.value='';
@@ -674,6 +676,8 @@ async function act(text,check){
   if(lower==='[save]')return saveBlock();
   if(lower==='[long]'||lower==='[short]'||lower==='[standard]'){state.prefs={length:lower.slice(1,-1)};await saveState();return}
   await loadGM();
+  inTurn=true;liveText='';
+  try{localStorage.setItem('hog.pending',JSON.stringify({text,check:check||null,n:state.n||0,at:Date.now(),tries:((JSON.parse(localStorage.getItem('hog.pending')||'null')||{}).text===text?((JSON.parse(localStorage.getItem('hog.pending'))||{}).tries||0)+1:0)}))}catch(e){}
   const dice=[d20(),d20(),d20()];
   const pending=document.createElement('div');pending.className='turn';pending.innerHTML=/^\[continue\]$/i.test(text)?'':'<p class="you">'+esc(text)+(check?rollChip(check):'')+'</p>';log.appendChild(pending);
   optsEl.innerHTML='';setBusy(true,'The quill is thinking…');scrollTo(pending);
@@ -685,7 +689,7 @@ async function act(text,check){
     const prompt=buildPrompt(text,dice,check);
     // a dropped connection (often iOS pausing the page while you are in another app) retries by itself, twice
     for(let tries=0;;tries++){
-      try{out=await sampleFn.json(prompt,{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}renderLive(live,sc)}else{busyText.textContent='Writing…'}}catch(e){}}});break}
+      try{out=await sampleFn.json(prompt,{model:'claude-opus-5-5',modelTier:'complex',cache:false,signal:ctl.signal,onText:({text})=>{try{const sc=partialScene(text);if(sc&&sc.length>12){if(!liveShown){liveShown=true;live.hidden=false;busy.hidden=true;scrollTo(live)}liveText=sc;renderLive(live,sc,partialScene.done)}else{busyText.textContent='Writing…'}}catch(e){}}});break}
       catch(e){if(tries>=2||!['network','overloaded'].includes(e.code))throw e;
         live.hidden=true;liveShown=false;setBusy(true,e.code==='network'?'The connection dropped. Trying again…':'Claude is busy. Trying again…');
         if(document.hidden)await new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',f);r()}};document.addEventListener('visibilitychange',f)});
@@ -694,23 +698,25 @@ async function act(text,check){
     try{wake&&wake.release()}catch(e){}
   }catch(e){
     try{wake&&wake.release()}catch(_){}
+    inTurn=false;liveText='';try{localStorage.removeItem('hog.pending')}catch(_){}
     setBusy(false);pending.remove();live.remove();
     if(e.code!=='cancelled')showErr(e);
     if(turns.length)renderOptions(turns[turns.length-1]);scrollEnd();return;
   }
-  if(!out||typeof out!=='object'||!out.scene){setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
+  if(!out||typeof out!=='object'||!out.scene){inTurn=false;try{localStorage.removeItem('hog.pending')}catch(_){}setBusy(false);pending.remove();live.remove();const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">The reply was missing its scene. Try again.</p>';log.appendChild(d);if(turns.length)renderOptions(turns[turns.length-1]);return}
   const n=(state.n||0)+1;
   const t={n,check:check?{sum:check.sum,outcome:check.outcome,outcomeKey:check.outcomeKey}:null,action:text,kind:['narrative','choice','crossroads'].includes(out.kind)?out.kind:(Array.isArray(out.options)&&out.options.length?'choice':'narrative'),scene:String(out.scene),changes:Array.isArray(out.changes)?out.changes.map(String).slice(0,12):[],options:Array.isArray(out.options)?out.options.map(o=>typeof o==='string'?o:{text:String(o&&o.text||''),stat:o&&o.stat||null,difficulty:o&&o.difficulty||null}):[],ask:!!out.ask,focus:(out.focus&&typeof out.focus==='object')?{type:String(out.focus.type||'none'),key:String(out.focus.key||'')}:null,present:Array.isArray(out.present)?out.present.map(String).slice(0,8):[],creatures:Array.isArray(out.creatures)?out.creatures.map(String).slice(0,4):[],tag:String(out.tag||'castle'),tod:String(out.tod||'day'),dice,at:new Date().toISOString()};
-  if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(out.sheet);ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment();syncWhere()}
+  if(out.sheet&&typeof out.sheet==='object'){const prevEq=state.sheet.equipment||{};const ns=normSheet(Object.assign(JSON.parse(JSON.stringify(state.sheet)),out.sheet));ns.equipment=Object.assign({},ns.equipment,prevEq);state.sheet=ns;syncEquipment();syncWhere()}
   if(Array.isArray(out.cast)){state.cast=state.cast||{};out.cast.forEach(c=>{if(c&&c.name)state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)})}
   if(out.look&&typeof out.look==='object'){const L=Object.assign({},state.look||{});['hair_style','hair_colour','glasses','height','note'].forEach(k=>{if(out.look[k]!=null)L[k]=String(out.look[k])});if(Array.isArray(out.look.marks))L.marks=out.look.marks.map(String);state.look=normLook(L)}
   if(out.progress&&typeof out.progress==='object')state.progress=out.progress;
   state.chronicle=(state.chronicle||[]).concat([String(out.log||t.scene.slice(0,120))]).slice(-400);
   state.n=n; state.updated=t.at;
   Object.keys(state.cast||{}).forEach(k=>{const rep=state.sheet.reputation||{};const key=Object.keys(rep).find(r=>k.includes(r)||r.includes(k.split(' ').slice(-1)[0]));if(key)state.cast[k].relationship=rep[key]});
+  inTurn=false;liveText='';
   turns.push(t); pending.remove(); live.remove(); setBusy(false); renderAll(); scrollEnd();
   if(window.HOG.settings.autoRead&&!/^\[/.test(text)){speakCurrent()}
-  try{$('saved').textContent='SAVING…';await db.doc('turns/'+tid(n)).set(t);await saveState()}catch(e){$('saved').textContent='NOT SAVED';const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">That turn could not be saved. If you reload, it will be lost.</p>';log.appendChild(d)}
+  try{$('saved').textContent='SAVING…';await db.doc('turns/'+tid(n)).set(t);await saveState();try{localStorage.removeItem('hog.pending')}catch(_){}}catch(e){$('saved').textContent='NOT SAVED';const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">That turn could not be saved. If you reload, it will be lost.</p>';log.appendChild(d)}
 }
 let saving=null;
 async function saveState(){if(saving)await saving.catch(()=>{});saving=db.doc('game/state').set(JSON.parse(JSON.stringify(state)));try{await saving;$('saved').textContent='SAVED';cloudPush()}catch(e){$('saved').textContent='NOT SAVED ('+(e&&e.code||'error')+')';throw e}return saving}
@@ -780,10 +786,16 @@ function showItem(i){
   $('iv-look').addEventListener('click',()=>{$('modal').hidden=true;act('['+PN()+' looks closely at the '+it.name+'. Describe it in detail, and if it has writing on it, give the writing in full.]')});
   $('iv-back').addEventListener('click',()=>showSheet('items'));
 }
+const FONTS={book:"'Crimson Pro', Georgia, serif",classic:"Georgia, 'Times New Roman', serif",clean:"-apple-system, 'Helvetica Neue', Arial, sans-serif",easy:"'Atkinson Hyperlegible', -apple-system, Arial, sans-serif"};
+function applyType(){const S=window.HOG.settings,r=document.documentElement.style;r.setProperty('--fs',String(+S.textSize||1));r.setProperty('--body',FONTS[S.textFont]||FONTS.book);
+  if(S.textFont==='easy'&&!document.getElementById('f-easy')){const l=document.createElement('link');l.id='f-easy';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap';document.head.appendChild(l)}}
+applyType();
 function showSettings(){
   const S=window.HOG.settings, vo=window.HOG.voice.VOICES;
   openModal('SETTINGS','<div class="settings">'+
    '<div class="k">SCENE LENGTH</div><select id="st-len"><option value="long">Long (500–700 words)</option><option value="standard">Standard (250–450)</option><option value="short">Short (120–180)</option></select>'+
+   '<div class="k">TEXT SIZE</div><select id="st-size"><option value="0.9">Small</option><option value="1">Standard</option><option value="1.12">Large</option><option value="1.25">Larger</option><option value="1.4">Largest</option></select>'+
+   '<div class="k">TYPEFACE</div><select id="st-font"><option value="book">Book (Crimson)</option><option value="classic">Classic (Georgia)</option><option value="clean">Clean (sans serif)</option><option value="easy">Easy reading (Atkinson Hyperlegible)</option></select>'+
    '<div class="k">MODEL</div><select id="st-model"><option value="claude-opus-5-5">Opus 5.5 (best writing, slowest)</option><option value="claude-sonnet-5-5">Sonnet 5.5 (faster, cheaper)</option></select>'+
    '<label class="chk"><input type="checkbox" id="st-think"> Let the GM think before writing (better plotting, slower first word)</label>'+
    '<div class="k">NARRATOR VOICE</div><select id="st-voice">'+Object.entries(vo).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('')+'</select>'+
@@ -794,7 +806,7 @@ function showSettings(){
    '<div class="row"><button type="button" class="mini" id="st-test">Test voice</button><button type="button" class="mini" id="st-export">Export save</button><button type="button" class="mini" id="st-import">Import save</button><button type="button" class="mini" id="st-reset">Start over</button></div>'+
    '<div class="k">CLOUD SAVE</div><div id="st-cloud"></div></div>');
   const drawCloud=()=>{const SY=window.SYNC,el=$('st-cloud');if(!SY||!el)return;
-    if(SY.on()){el.innerHTML='<p class="note">On. Every page uploads, and each device loads the newest save when it opens. '+esc(SY.status()||'')+'</p><div class="row"><button type="button" class="mini" id="cl-now">Upload now</button><button type="button" class="mini" id="cl-off">Unlink this device</button></div>';
+    if(SY.on()){el.innerHTML='<p class="note">On. Every page uploads, and each device loads the newest save when it opens.'+(SY.lastOk?' Last upload '+SY.lastOk.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.':'')+(SY.lastError?' Last problem: '+esc(SY.lastError):'')+'</p><div class="row"><button type="button" class="mini" id="cl-now">Upload now</button><button type="button" class="mini" id="cl-off">Unlink this device</button></div>';
       $('cl-now').addEventListener('click',async()=>{try{const r=await SY.push();if(r==='behind'){$('modal').hidden=true;cloudAhead()}else $('cl-now').textContent='Uploaded'}catch(e){$('cl-now').textContent=e.message}});
       $('cl-off').addEventListener('click',()=>{SY.disconnect();drawCloud()});return}
     el.innerHTML='<p class="note">Off: the save lives only in this browser. Paste a GitHub token with only the gist box ticked (<a href="'+SY.TOKEN_URL+'" target="_blank" rel="noopener">make one</a>), and the save, key and passphrase follow you to any device.</p><input id="cl-tok" type="password" autocomplete="off" placeholder="ghp_…"><div class="row"><button type="button" class="mini" id="cl-go">Link</button></div><p class="note" id="cl-msg"></p>';
@@ -808,9 +820,9 @@ function showSettings(){
       }catch(e){m.textContent=e.message}});
   };drawCloud();
   $('st-len').value=(state&&state.prefs&&state.prefs.length)||'long'; $('st-len').addEventListener('change',()=>{if(!state)return;state.prefs={length:$('st-len').value};saveState().catch(()=>{})});
-  $('st-model').value=S.model; $('st-think').checked=!!S.thinking; $('st-voice').value=S.voice; $('st-auto').checked=!!S.autoRead; $('st-rate').value=S.rate||1; $('st-key').value=S.apiKey||'';
-  const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();window.HOG.saveSettings();if(window.SYNC&&window.SYNC.on())window.SYNC.push().catch(()=>{})};
-  ['st-model','st-think','st-voice','st-auto','st-rate','st-key'].forEach(id=>$(id).addEventListener('change',save));
+  $('st-model').value=S.model; $('st-think').checked=!!S.thinking; $('st-voice').value=S.voice; $('st-auto').checked=!!S.autoRead; $('st-rate').value=S.rate||1; $('st-key').value=S.apiKey||'';$('st-size').value=String(+S.textSize||1);$('st-font').value=S.textFont||'book';
+  const save=()=>{S.model=$('st-model').value;S.thinking=$('st-think').checked;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.rate=+$('st-rate').value;S.apiKey=$('st-key').value.trim();S.textSize=+$('st-size').value;S.textFont=$('st-font').value;applyType();window.HOG.saveSettings();if(window.SYNC&&window.SYNC.on())window.SYNC.push().catch(()=>{})};
+  ['st-model','st-think','st-voice','st-auto','st-rate','st-key','st-size','st-font'].forEach(id=>$(id).addEventListener('change',save));
   $('st-test').addEventListener('click',()=>{save();window.HOG.voice.speak('The owl arrived at a quarter past seven, which Graham Thunder considered unprofessional.')});
   $('st-export').addEventListener('click',()=>{const txt=window.HOG.exportSave();navigator.clipboard.writeText(txt).then(()=>{$('st-export').textContent='Copied'}).catch(()=>{openModal('EXPORT','<pre class="save">'+esc(txt)+'</pre>')})});
   $('st-import').addEventListener('click',()=>{openModal('IMPORT SAVE','<textarea id="imp" style="width:100%;height:160px;font:14px monospace"></textarea><div class="row"><button class="go" id="imp-go" type="button" style="padding:10px 14px">Import</button></div>');$('imp-go').addEventListener('click',()=>{try{window.HOG.importSave($('imp').value);(window.SYNC&&window.SYNC.on()?window.SYNC.push(true):Promise.resolve()).catch(()=>{}).then(()=>location.reload())}catch(e){alert('Could not read that save')}})});
@@ -897,7 +909,7 @@ function stopSpeaking(){V.stop();speaking=false;lbtn(false)}
 async function speakCurrent(){
   if(!turns.length)return; if(speaking){stopSpeaking();return}
   speaking=true;lbtn(true);
-  await V.speak(narrationText(turns[turns.length-1]));
+  await V.speak(inTurn&&liveText?narrationText({scene:liveText}):narrationText(turns[turns.length-1]));
   speaking=false;lbtn(false);
 }
 function narrationText(t){return String(t.scene||'').split(/\n\s*\n/).map(b=>b.replace(/\*/g,'').trim()).filter(Boolean).join('\n\n')}
@@ -1113,9 +1125,15 @@ async function boot(){
     renderAll();if(turns.length>1)scrollEnd();$('saved').textContent=state.updated?'SAVED':'AUTOSAVE ON';cloudPush();
     if(!(state.look.created>=2))await showCreator();
     setTimeout(()=>{try{window.preloadDice&&window.preloadDice()}catch(e){}},2500);
+    // a choice that was mid-way when the page reloaded (iOS discards pages left in the background): send it again
+    try{const p=JSON.parse(localStorage.getItem('hog.pending')||'null');
+      if(p&&p.text&&(p.n||0)===(state.n||0)&&Date.now()-p.at<6*3600e3){
+        if((p.tries||0)<2){const d=document.createElement('div');d.className='turn';d.innerHTML='<p class="note">Picking up your last choice where the page left off…</p>';log.appendChild(d);setTimeout(()=>{d.remove();act(p.text,p.check)},600)}
+        else{const d=document.createElement('div');d.className='turn';d.innerHTML='<div class="err"><b>Your last choice did not finish.</b><p>'+esc(p.text)+'</p><button type="button" class="mini">Send it again</button></div>';log.appendChild(d);d.querySelector('button').addEventListener('click',()=>{d.remove();act(p.text,p.check)})}
+      }else if(p)localStorage.removeItem('hog.pending')}catch(e){}
     let hiddenAt=0;document.addEventListener('visibilitychange',async()=>{
       if(document.hidden){hiddenAt=Date.now();return}
-      if(!window.SYNC||!window.SYNC.on()||Date.now()-hiddenAt<15000||busy.hidden===false)return;
+      if(!window.SYNC||!window.SYNC.on()||Date.now()-hiddenAt<15000||busy.hidden===false||inTurn)return;
       try{if(await window.SYNC.pull())location.reload()}catch(e){}
     });
   }catch(e){log.innerHTML='<div class="empty">The save could not be read ('+esc(e&&e.code||e)+'). Reload to try again.</div>'}

@@ -110,8 +110,8 @@ const SYNC={
       // behind if the cloud is newer, or another device moved it on since this one last synced
       if(c.gist&&!force){const r=await readGist(c.gist,c.token);if(r&&(newer(r,local())||(c.base!=null&&(r.n||0)>c.base))){say('CLOUD IS AHEAD');return 'behind'}}
       const snap=snapshot(), id=await writeGist(c.gist,c.token,snap);setCfg({token:c.token,gist:id,base:snap.n||0});
-      say('SAVED · CLOUD');return 'ok';
-    }catch(e){say('CLOUD SAVE FAILED');throw e}
+      SYNC.lastOk=new Date();SYNC.lastError='';say('SAVED · CLOUD');return 'ok';
+    }catch(e){SYNC.lastError=e.message||String(e);say('CLOUD SAVE FAILED');throw e}
   },
   apply,snapshot,newer,readGist
 };
