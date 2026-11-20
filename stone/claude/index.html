@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The Stone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Press+Start+2P&display=swap">
+<style>
+/* VOICE: a storybook read by lamplight. IDEA: a printed novel with a painted plate at each chapter. PICTURE: the pixel painting of where Robert stands. COLOUR and TYPE: parchment and ink, Crimson Pro, pixel captions. LAYOUT: one reading column, choices docked below. */
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}
+:root{
+  --bg:#e9dfc9; --paper:#f6efdf; --paper2:#efe6d0; --ink:#2b2219; --muted:#7a6b57; --line:#d3c4a6; --chip:#e7dcc3;
+  --accent:#8c1f25; --gold:#9c7a24;
+  --display:'Press Start 2P', 'Courier New', monospace;
+  --body:'Crimson Pro', Georgia, 'Times New Roman', serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b; --accent:#d94b52; --gold:#d9a94b; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b; --accent:#d94b52; --gold:#d9a94b; color-scheme:dark }
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:calc(18.5px*var(--fs,1));line-height:1.55;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0b1026}
+#app{min-height:100vh;max-width:720px;margin:0 auto;background:var(--paper);box-shadow:0 0 0 1px var(--line)}
+.top{position:relative;aspect-ratio:16/9;overflow:hidden;background:#0b1026;line-height:0;border-bottom:2px solid var(--gold)}
+.top canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(to top,rgba(5,6,16,.75),rgba(5,6,16,0))}
+.caption{position:absolute;left:0;right:0;bottom:0;z-index:1;display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-family:var(--display);font-size:8px;line-height:1.5;letter-spacing:.04em;color:#f3ead0;text-shadow:0 1px 0 #000}
+.caption span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.caption .date{color:#d9c58a}
+.brand{position:absolute;left:10px;top:8px;z-index:1;padding:5px 7px;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.55);border-radius:2px;line-height:1.5}
+#page{padding:18px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.turn,.present,details.earlier,.live{max-width:36em;margin:0 auto}
+.turn + .turn{margin-top:26px;padding-top:20px;border-top:1px solid var(--line)}
+.turn.old{color:var(--muted)}
+details.earlier{margin-bottom:18px}
+details.earlier summary{list-style:none;cursor:pointer;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+details.earlier summary::-webkit-details-marker{display:none}
+details.earlier summary::after{content:"SHOW"}details.earlier[open] summary::after{content:"HIDE"}
+.turn p{margin:0 0 .9em}
+p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);padding-left:12px;margin-bottom:1em}
+.turn.latest p.lede::first-letter{font-weight:600;font-size:3.1em;line-height:.8;float:left;padding:6px 7px 0 0;color:var(--accent)}
+.chap{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--gold);margin:0 0 14px}
+.present{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed var(--line)}
+.who{display:flex;flex-direction:column;align-items:center;gap:4px}
+.who canvas{width:64px;height:64px;image-rendering:pixelated;border:1px solid var(--line);border-radius:3px;background:#5d6145}
+.who span{font-family:var(--display);font-size:6px;color:var(--muted);max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.listen{margin-left:auto;font-family:var(--display);font-size:7.5px;letter-spacing:.08em;color:var(--accent);background:transparent;border:1px solid var(--accent);border-radius:3px;padding:8px 12px;cursor:pointer}
+.listen.on{background:var(--accent);color:#fff}
+.vnote{flex-basis:100%;font-size:14px;color:var(--muted);font-style:italic}.vnote:empty{display:none}
+.note{color:var(--muted);font-style:italic;font-size:calc(16.5px*var(--fs,1))}
+.live p{margin:0 0 .9em}.cursor{animation:blink 1s steps(1) infinite;color:var(--gold)}@keyframes blink{50%{opacity:0}}
+.finishing{animation:fin 1.6s ease-in-out infinite}@keyframes fin{50%{opacity:.45}}
+.err{max-width:36em;margin:16px auto 0;border:1px solid #b5524c;background:#f6e2dc;color:#5a1f1a;padding:12px 14px;border-radius:4px;font-size:16px}
+.err b{display:block;font-size:17px}.err p{margin:4px 0 0}.err small{display:block;margin-top:8px;font:12px/1.4 ui-monospace,monospace;opacity:.8;word-break:break-word}
+.dock{position:sticky;bottom:0;background:var(--paper2);border-top:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.dock .lead{display:flex;justify-content:space-between;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+#options{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.opt{appearance:none;text-align:left;font:inherit;font-size:calc(17px*var(--fs,1));line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:11px 12px;display:flex;gap:10px;cursor:pointer}
+.opt:active{transform:translateY(1px)}.opt .n{font-family:var(--display);font-size:9px;color:var(--accent);flex:none;width:14px;padding-top:4px}
+.opt.cont{justify-content:center;background:var(--accent);color:#fff;border-color:var(--accent);font-family:var(--display);font-size:9px;letter-spacing:.08em;padding:14px}
+#free{display:flex;gap:8px}
+#action{flex:1;min-width:0;font:inherit;font-style:italic;font-size:calc(17px*var(--fs,1));color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.go{font-family:var(--display);font-size:9px;color:#fff;background:var(--accent);border:0;border-radius:4px;padding:0 16px;cursor:pointer}
+.bar{display:flex;gap:8px;margin-top:10px}.bar .sp{flex:1}
+.mini{font-family:var(--display);font-size:7px;letter-spacing:.06em;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:10px 12px;cursor:pointer}
+#busy{max-width:36em;margin:10px auto;display:flex;gap:10px;align-items:center;color:var(--muted);font-style:italic}
+#modal{position:fixed;inset:0;z-index:20;background:rgba(10,8,14,.55);display:flex;align-items:flex-end;justify-content:center}
+.card{background:var(--paper);width:100%;max-width:720px;max-height:88vh;overflow:auto;border-radius:12px 12px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+.card h2{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-size:9px;letter-spacing:.08em;color:var(--accent);margin:0 0 14px}
+.k{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px}
+.card input,.card select{width:100%;box-sizing:border-box;font:inherit;font-size:17px;color:var(--ink);background:var(--paper2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.card a{color:var(--accent)}
+.card ul{padding-left:1.1em}.card li{margin:.3em 0}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{font-family:var(--display);font-size:7px;padding:8px 10px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:3px}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.empty{max-width:36em;margin:30px auto;text-align:center;font-style:italic;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top"><canvas id="scene" width="320" height="180"></canvas><div class="brand">THE STONE</div>
+    <div class="caption"><span id="loc">Privet Drive</span><span class="date" id="date"></span></div></div>
+  <div id="page"><div id="log"></div><div class="live" id="live" hidden></div><div id="busy" hidden><span>✦</span><span id="busy-text">The quill is thinking…</span></div></div>
+  <div class="dock">
+    <div class="lead"><span id="lead">WHAT DO YOU DO?</span><span id="saved"></span></div>
+    <div id="options"></div>
+    <form id="free" autocomplete="off"><input id="action" placeholder="Or tell me what you do…" enterkeyhint="go"><button class="go" id="b-go">Go</button></form>
+    <div class="bar"><button type="button" class="mini" id="b-journal">Journal</button><span class="sp"></span><button type="button" class="mini" id="b-settings">Settings</button></div>
+  </div>
+</div>
+<div id="modal" hidden><div class="card"><h2><span id="m-title"></span><button type="button" class="mini" id="m-close">Close</button></h2><div id="m-body"></div></div></div>
+
+<script src="art.js"></script>
+<script src="portraits.js"></script>
+<script src="portraits_hand.js"></script>
+<script src="portraits_cast.js"></script>
+<script src="gm.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
