@@ -82,6 +82,7 @@ function renderOptions(t){optsEl.innerHTML='';$('lead').textContent='WHAT DO YOU
   if(!t){const b=document.createElement('button');b.type='button';b.className='opt cont';b.textContent='BEGIN';b.addEventListener('click',()=>act('[begin]'));optsEl.appendChild(b);return}
   if(state.ended){$('lead').textContent='THE END OF THE FIRST YEAR';return}
   (t.options||[]).forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML='<span class="n">'+(i+1)+'</span><span>'+esc(o)+'</span>';b.addEventListener('click',()=>act(o));optsEl.appendChild(b)})}
+const scrollToLatest=()=>setTimeout(()=>{const el=log.querySelector('.present')||log.querySelector('.turn.latest');if(el)window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+window.scrollY-8),behavior:'smooth'})},60);
 const scrollEnd=()=>setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),40);
 function setBusy(on,txt){busy.hidden=!on;if(txt)busyText.textContent=txt}
 
@@ -123,7 +124,7 @@ function prompt(action){
     '=== ROBERT\'S ACTION ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action,
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
-    '{"scene":"the page, 250-450 words, paragraphs separated by \\n\\n",'+
+    '{"scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
     ' "options":["3 or 4 choices, each at most 14 words, written as what Robert does"],'+
     ' "chapter":the book chapter this page belongs to (2-17),'+
     ' "date":"in-story date e.g. Wednesday 31 July 1991",'+
@@ -162,7 +163,7 @@ async function act(text){
   state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
   Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
   turns.push(t);if(turns.length>6)turns=turns.slice(-6);
-  clearPending();save(t);renderAll();scrollEnd();
+  clearPending();save(t);renderAll();scrollToLatest();
   if(S.autoRead)speakCurrent();
 }
 function errInfo(e){const m=String(e&&e.message||'');
@@ -213,7 +214,7 @@ async function boot(){
   let timedOut=false;const timer=setTimeout(()=>{timedOut=true;$('saved').textContent='SAVE NOT REACHED'},10000);
   try{await loadAll()}catch(e){state=state||fresh()}
   clearTimeout(timer);if(!timedOut)$('saved').textContent=DB&&UID?(state.n?'SAVED':'NEW STORY'):'NOT SAVING';
-  renderAll();if(turns.length>1)scrollEnd();
+  renderAll();if(turns.length)scrollToLatest();
   if(!SAMPLE){const d=document.createElement('div');d.className='err';d.innerHTML='<b>This page writes its story with Claude.</b><p>Open it from your Claude account to play.</p>';log.appendChild(d)}
   try{const p=JSON.parse(localStorage.getItem('stone.pending')||'null');
     if(p&&p.text&&p.n===state.n&&Date.now()-p.at<6*3600e3&&(p.tries||0)<2&&SAMPLE){const d=document.createElement('p');d.className='note';d.style.textAlign='center';d.textContent='Picking up your last choice…';log.appendChild(d);setTimeout(()=>{d.remove();act(p.text)},600)}
