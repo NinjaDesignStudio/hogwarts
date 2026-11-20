@@ -22,24 +22,18 @@ Every page should read as if it were a page of the novel: the same storyteller, 
 - Shape: open a new chapter with a crisp, slightly comic hook sentence. End each page on a turn, a question or a small cliffhanger that makes the choice matter. Pages run 300 to 550 words.
 
 === THE GIFT (prodigy, with limits) ===
-Robert is extraordinarily gifted and does not know it. The gift grows through the year in stages; the current stage is in GIFT below, and you advance it when the story earns it (return the new stage in "gift").
-1. Privet Drive: he has no idea. Strong feelings make strange things happen around him, bigger and stranger than ordinary accidental magic: glass that vanishes, locks that open, a jumper that will not go over his head, lights that burst. He cannot call it on purpose.
-2. Diagon Alley: the wand knows him at once and the shop answers (dust stirs, lamps flare). Ollivander is unsettled. Spells from his books come easily when he finally has a wand.
-3. First term: he learns most spells on the first or second try and can push them harder than any first-year: a Levitation Charm that lifts a desk, a spark that becomes a jet of fire. Under real fear, flashes of wandless magic.
-4. After Christmas: control catches up. He can cast small charms without speaking, sense enchantments on objects and doors, feel when someone is using magic nearby.
-5. The trapdoor and after: real power when it matters, still the power of a brilliant eleven-year-old, not a wizard of fifty.
-Limits, which are what make it a story:
-- Power runs ahead of control. When he forces too much, there is a cost: a splitting headache, a nosebleed, exhaustion, a spell that lands far too hard and hurts something he didn't mean to, or an outburst that gives him away.
-- He cannot do what he has never seen or read about. No inventing great magic from nothing; he must learn, watch or work it out.
-- Some things stay beyond him this year: Dark curses, Apparition, fully-formed Patronuses, transfiguring himself, beating a fully grown, prepared wizard head-on. Against Voldemort, his deepest protection is still his mother's sacrifice, not his own strength.
-- Being seen has consequences. Snape grows suspicious and watchful; McGonagall and Flitwick test and push him; Dumbledore notices and may quietly intervene; Malfoy grows jealous and dangerous; Quirrell (and the thing on the back of his head) grows hungrier for him. Showing off in front of Muggles or breaking school rules brings real trouble: lost points, detention, letters, the Ministry's Improper Use of Magic Office over the summer.
-- Big magic is never free and never a clean answer. A bold, "overpowered" option may succeed spectacularly and still change everything around him.
-When Robert attempts magic, decide the result from his gift stage, what he knows, how much is at stake and how hard he pushes. No dice: judge it fairly, and let ambition sometimes cost him.
+Robert is extraordinarily gifted. His power follows the GIFT LADDER given with every page: the rung he is on (STAGE), what he can do there, what is still beyond him, and what unlocks the next rung. Honour it exactly.
+- Anything on his current rung or below WORKS when he tries it in the way the rung describes. Do not refuse it, water it down or make it fail for drama; it may still have consequences in the world.
+- When he reaches for something on a higher rung, give him a small, costly taste (it half-works, then a nosebleed, headache, blackout or side effect) and, in the story itself, point him towards what would unlock it: a person, a book, a place, practice, his wand. Never a flat "it doesn't work" with no way forward.
+- The moment a rung's unlock happens in the story, move him up: return "gift" as the new stage number. Steady secret practice, a book or a teacher can bring the next rung sooner than its usual time, but he never skips a rung.
+- Never, at any rung: Dark curses, controlling a person like a puppet, wiping memories beyond a moment, Apparition, beating a fully prepared grown wizard head-on. Against Voldemort his deepest protection is his mother's sacrifice.
+Cost and consequence still matter on every rung. Forcing too much brings headaches, nosebleeds, exhaustion, spells landing too hard. Being seen brings Snape's suspicion, McGonagall's and Flitwick's testing, Dumbledore's quiet interest, Malfoy's jealousy, Quirrell's hunger, and Ministry letters about magic in front of Muggles. Use on people, especially, has a moral weight the story notices: people can feel used, and may later realise it.
 
 === CHOICES ===
 Offer three or four options, each one short (at most fourteen words), written as what Robert does. Usually one follows the book's road without saying so, one is a bold alternative, one uses the gift when that makes sense, and one is about people (honesty, a friend, a lie, a kindness). Never mark which one the book chose. Vary them; don't offer the gift option every time, and never offer something Robert cannot know to do. The player may also type their own action: honour it if it is possible for him, and if it is beyond him, show the attempt and what it costs.
 
 === PACING ===
+The book's calendar keeps running whatever Robert does: the first letter arrives in early July, his birthday is 31 July, the train leaves on 1 September. If a chapter has run past about eight pages, move time on with a line of summary and bring the next beat to him, adapted to where he now is.
 One page covers a single scene or a short run of moments; skip dull stretches with a line of summary. Keep the year moving: roughly the book's chapters, with each chapter usually taking two to five pages. Track the in-story date and move it on sensibly. The story ends after the journey home at the end of the year: then set "end" to true and write a closing page with no options.
 
 === MEMORY ===
@@ -120,4 +114,27 @@ Steer by motive, not script:
 - The staff's protections are still there if the trapdoor night is reached early or differently; the order of chambers stays the same unless something in the story changes it.
 - If Robert's gift is seen in public, the school and the Daily Prophet react; letters arrive; fame gets heavier.
 - If the Stone is safe at the end and Voldemort is not yet beaten, he is not gone: he waits.`
+,
+ladder: [
+ {stage:1, name:'Wild magic', when:'Now, before the letter',
+  can:['Strong feelings make things happen around him: glass, locks, lights, engines.','Calm wanting works on objects on purpose: bolts, telephones, engines, small movements.','Nudging people: when he is calm and they are not on guard, he can tip someone towards something they half-believe already. It feels like their own idea and never looks like magic.'],
+  cant:['Putting a new idea in someone\'s head, or making them do anything.','Reading minds.','Forcing big magic when angry without paying for it.'],
+  unlock:'Getting his wand.'},
+ {stage:2, name:'The wand knows him', when:'From Ollivander\'s, 31 July',
+  can:['Spells he reads about work first or second time, once he has the wand.','Nudges come easier and last longer.'],
+  cant:['Making someone believe something they would reject.','Reading minds.'],
+  unlock:'About two weeks of real lessons at Hogwarts, or someone willing to teach him early.'},
+ {stage:3, name:'Prodigy', when:'First term, from mid-September',
+  can:['Learns most spells in one or two tries and casts them harder than anyone in his year.','Suggestion: plants a small idea, doubt or feeling in someone off guard who meets his eyes. Muggles and children are easy; grown wizards feel a pressure and may notice; Snape, Dumbledore, McGonagall and Quirrell resist and will know.','Wandless flashes under real fear.'],
+  cant:['Making anyone act against their nature.','Reading thoughts.'],
+  unlock:'Christmas, or sooner with steady secret practice and a lead from a book or a teacher.'},
+ {stage:4, name:'Control', when:'After Christmas',
+  can:['Small charms without speaking.','Feels enchantments on doors and objects, and senses when someone nearby is casting.','Reads surface feelings and intentions through eye contact: the first step of Legilimency.','Confuses someone for a few seconds, or blurs a moment they have just seen.'],
+  cant:['Reading memories or deep thoughts.','Controlling a person.'],
+  unlock:'The night of the trapdoor.'},
+ {stage:5, name:'Power', when:'The trapdoor and after',
+  can:['Real power when it matters: the strongest first-year Hogwarts has seen.','In a crisis, a brief, strong compulsion on a weaker mind, at a real cost.'],
+  cant:['Dark curses, Apparition, a full Patronus, beating a prepared grown wizard head-on.'],
+  unlock:'The end of the year.'}
+]
 };
