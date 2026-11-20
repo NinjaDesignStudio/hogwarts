@@ -3,9 +3,11 @@
 (function(){
 'use strict';
 const LS=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}};
-const SETTINGS_KEY='hog.settings', STATE_KEY='hog.state', TURNS_KEY='hog.turns', GM_KEY='hog.gm';
+// each game on this site keeps its own saves: window.GAME_NS ('hog' for the first game, 'stone' for the book game)
+const NS=(window.GAME_NS||'hog')+'.';
+const SETTINGS_KEY=NS+'settings', STATE_KEY=NS+'state', TURNS_KEY=NS+'turns', GM_KEY=NS+'gm';
 const settings=Object.assign({apiKey:'',model:'claude-opus-5-5',thinking:true,voice:'bm_george',autoRead:true,rate:1.0},JSON.parse(LS(SETTINGS_KEY)||'{}'));
-window.HOG={settings,saveSettings(){LS(SETTINGS_KEY,JSON.stringify(settings))}};
+window.HOG={settings,NS,saveSettings(){LS(SETTINGS_KEY,JSON.stringify(settings))}};
 
 /* ---------- crypto: AES-GCM with PBKDF2 ---------- */
 const enc=new TextEncoder(), dec=new TextDecoder();
@@ -54,6 +56,7 @@ async function callModel(input,opts,wantJson){
   if(!settings.apiKey)throw mkErr('not_granted','No API key');
   const messages=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:m.content}));
   const body={model:opts.fastModel||settings.model,max_tokens:opts.maxTokens||(wantJson?16000:1500),stream:true,messages};
+  if(opts.system)body.system=[{type:'text',text:opts.system,cache_control:{type:'ephemeral'}}];
   if(wantJson&&settings.thinking&&!opts.fastModel)body.thinking={type:'enabled',budget_tokens:3000};
   if(body.thinking)body.max_tokens=Math.max(body.max_tokens,body.thinking.budget_tokens+16000);
   let res;
@@ -92,7 +95,7 @@ async function callModel(input,opts,wantJson){
   if(v===undefined){const m=text.match(/```(?:json)?\s*([\s\S]*?)```/);if(m)v=tryParse(m[1])}
   if(v===undefined){const a=text.indexOf('{'),b=text.lastIndexOf('}');if(a>=0&&b>a)v=tryParse(text.slice(a,b+1))}
   if(v===undefined){const a=text.indexOf('{'),b=text.lastIndexOf('}');if(a>=0&&b>a)v=tryParse(repairJson(text.slice(a,b+1)))}
-  if(v===undefined){try{localStorage.setItem('hog.lastbad',text.slice(-20000))}catch(e){}throw mkErr(truncated?'truncated':'invalid_json',truncated?'reply cut off at the length limit':'could not parse',text)}
+  if(v===undefined){try{localStorage.setItem(NS+'lastbad',text.slice(-20000))}catch(e){}throw mkErr(truncated?'truncated':'invalid_json',truncated?'reply cut off at the length limit':'could not parse',text)}
   return v;
 }
 // escape raw control characters inside strings and drop trailing commas

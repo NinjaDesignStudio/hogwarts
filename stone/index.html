@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Stone">
+<meta name="theme-color" content="#0b1026">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="icon" href="../icon-192.png">
+<title>The Stone</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Press+Start+2P&display=swap">
+<style>
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}
+:root{
+  --bg:#e9dfc9; --paper:#f6efdf; --paper2:#efe6d0; --ink:#2b2219; --muted:#7a6b57; --line:#d3c4a6; --chip:#e7dcc3;
+  --accent:#8c1f25; --gold:#9c7a24;
+  --display:'Press Start 2P', 'Courier New', monospace;
+  --body:'Crimson Pro', Georgia, 'Times New Roman', serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b; --accent:#d94b52; --gold:#d9a94b; color-scheme:dark } }
+:root[data-theme="dark"]{ --bg:#0f0d14; --paper:#17141d; --paper2:#1d1925; --ink:#e8dfcc; --muted:#9c907d; --line:#2f2938; --chip:#221d2b; --accent:#d94b52; --gold:#d9a94b; color-scheme:dark }
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:calc(18.5px*var(--fs,1));line-height:1.55;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:#0b1026}
+#app{min-height:100vh;max-width:720px;margin:0 auto;background:var(--paper);box-shadow:0 0 0 1px var(--line)}
+.top{position:relative;aspect-ratio:16/9;overflow:hidden;background:#0b1026;line-height:0;border-bottom:2px solid var(--gold)}
+.top canvas{width:100%;height:100%;display:block;image-rendering:pixelated}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(to top,rgba(5,6,16,.75),rgba(5,6,16,0))}
+.caption{position:absolute;left:0;right:0;bottom:0;z-index:1;display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-family:var(--display);font-size:8px;line-height:1.5;letter-spacing:.04em;color:#f3ead0;text-shadow:0 1px 0 #000}
+.caption span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.caption .date{color:#d9c58a}
+.brand{position:absolute;left:10px;top:8px;z-index:1;padding:5px 7px;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:#f3ead0;background:rgba(5,6,16,.55);border-radius:2px;line-height:1.5}
+#page{padding:18px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.turn,.present,details.earlier,.live{max-width:36em;margin:0 auto}
+.turn + .turn{margin-top:26px;padding-top:20px;border-top:1px solid var(--line)}
+.turn.old{color:var(--muted)}
+details.earlier{margin-bottom:18px}
+details.earlier summary{list-style:none;cursor:pointer;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+details.earlier summary::-webkit-details-marker{display:none}
+details.earlier summary::after{content:"SHOW"}details.earlier[open] summary::after{content:"HIDE"}
+.turn p{margin:0 0 .9em}
+p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);padding-left:12px;margin-bottom:1em}
+.turn.latest p.lede::first-letter{font-weight:600;font-size:3.1em;line-height:.8;float:left;padding:6px 7px 0 0;color:var(--accent)}
+.chap{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--gold);margin:0 0 14px}
+.present{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed var(--line)}
+.who{display:flex;flex-direction:column;align-items:center;gap:4px}
+.who canvas{width:64px;height:64px;image-rendering:pixelated;border:1px solid var(--line);border-radius:3px;background:#5d6145}
+.who span{font-family:var(--display);font-size:6px;color:var(--muted);max-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.listen{margin-left:auto;font-family:var(--display);font-size:7.5px;letter-spacing:.08em;color:var(--accent);background:transparent;border:1px solid var(--accent);border-radius:3px;padding:8px 12px;cursor:pointer}
+.listen.on{background:var(--accent);color:#fff}
+.vnote{flex-basis:100%;font-size:14px;color:var(--muted);font-style:italic}.vnote:empty{display:none}
+.note{color:var(--muted);font-style:italic;font-size:calc(16.5px*var(--fs,1))}
+.live p{margin:0 0 .9em}.cursor{animation:blink 1s steps(1) infinite;color:var(--gold)}@keyframes blink{50%{opacity:0}}
+.finishing{animation:fin 1.6s ease-in-out infinite}@keyframes fin{50%{opacity:.45}}
+.err{max-width:36em;margin:16px auto 0;border:1px solid #b5524c;background:#f6e2dc;color:#5a1f1a;padding:12px 14px;border-radius:4px;font-size:16px}
+.err b{display:block;font-size:17px}.err p{margin:4px 0 0}.err small{display:block;margin-top:8px;font:12px/1.4 ui-monospace,monospace;opacity:.8;word-break:break-word}
+.dock{position:sticky;bottom:0;background:var(--paper2);border-top:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.dock .lead{display:flex;justify-content:space-between;font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+#options{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.opt{appearance:none;text-align:left;font:inherit;font-size:calc(17px*var(--fs,1));line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:11px 12px;display:flex;gap:10px;cursor:pointer}
+.opt:active{transform:translateY(1px)}.opt .n{font-family:var(--display);font-size:9px;color:var(--accent);flex:none;width:14px;padding-top:4px}
+.opt.cont{justify-content:center;background:var(--accent);color:#fff;border-color:var(--accent);font-family:var(--display);font-size:9px;letter-spacing:.08em;padding:14px}
+#free{display:flex;gap:8px}
+#action{flex:1;min-width:0;font:inherit;font-style:italic;font-size:calc(17px*var(--fs,1));color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.go{font-family:var(--display);font-size:9px;color:#fff;background:var(--accent);border:0;border-radius:4px;padding:0 16px;cursor:pointer}
+.bar{display:flex;gap:8px;margin-top:10px}.bar .sp{flex:1}
+.mini{font-family:var(--display);font-size:7px;letter-spacing:.06em;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:10px 12px;cursor:pointer}
+#busy{max-width:36em;margin:10px auto;display:flex;gap:10px;align-items:center;color:var(--muted);font-style:italic}
+#modal,#setup{position:fixed;inset:0;z-index:20;background:rgba(10,8,14,.55);display:flex;align-items:flex-end;justify-content:center}
+#setup{background:var(--bg);align-items:center}
+.card{background:var(--paper);width:100%;max-width:720px;max-height:88vh;overflow:auto;border-radius:12px 12px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
+#setup .card{max-width:460px;border-radius:8px;border-top:4px solid var(--accent);margin:16px}
+.card h2{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-size:9px;letter-spacing:.08em;color:var(--accent);margin:0 0 14px}
+.k{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px}
+.card input,.card select{width:100%;box-sizing:border-box;font:inherit;font-size:17px;color:var(--ink);background:var(--paper2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.card a{color:var(--accent)}
+.card ul{padding-left:1.1em}.card li{margin:.3em 0}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{font-family:var(--display);font-size:7px;padding:8px 10px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:3px}.tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.empty{max-width:36em;margin:30px auto;text-align:center;font-style:italic;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top"><canvas id="scene" width="320" height="180"></canvas><div class="brand">THE STONE</div>
+    <div class="caption"><span id="loc">Privet Drive</span><span class="date" id="date"></span></div></div>
+  <div id="page"><div id="log"></div><div class="live" id="live" hidden></div><div id="busy" hidden><span>✦</span><span id="busy-text">The quill is thinking…</span></div></div>
+  <div class="dock">
+    <div class="lead"><span id="lead">WHAT DO YOU DO?</span><span id="saved"></span></div>
+    <div id="options"></div>
+    <form id="free" autocomplete="off"><input id="action" placeholder="Or tell me what you do…" enterkeyhint="go"><button class="go" id="b-go">Go</button></form>
+    <div class="bar"><button type="button" class="mini" id="b-journal">Journal</button><span class="sp"></span><button type="button" class="mini" id="b-settings">Settings</button></div>
+  </div>
+</div>
+<div id="setup" hidden><div class="card"><h2>THE STONE</h2>
+  <p class="note" id="setup-msg">Your first year, with you in it. One thing first.</p>
+  <div id="s-tok-wrap"><div class="k">CLOUD SAVE TOKEN</div><input id="s-tok" type="password" autocomplete="off" placeholder="ghp_… (the same one as the other game)">
+    <p class="note">Your GitHub gist token. With it, the key and save follow you to any device.</p></div>
+  <div id="s-key-wrap"><div class="k">ANTHROPIC API KEY</div><input id="s-key" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+  <p class="note" id="s-err"></p>
+  <div class="row"><button class="go" id="s-go" style="padding:14px 18px">Open the book</button></div>
+</div></div>
+<div id="modal" hidden><div class="card"><h2><span id="m-title"></span><button type="button" class="mini" id="m-close">Close</button></h2><div id="m-body"></div></div></div>
+
+<script>window.GAME_NS='stone';</script>
+<script src="../shim.js"></script>
+<script src="../sync.js"></script>
+<script src="../art.js"></script>
+<script src="../portraits.js"></script>
+<script src="../portraits_hand.js"></script>
+<script src="../portraits_cast.js"></script>
+<script src="../voice.js"></script>
+<script src="gm.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const log=$('log'), live=$('live'), busy=$('busy'), busyText=$('busy-text'), optsEl=$('options'), input=$('action');
+const S=window.HOG.settings;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TAGS='street (Privet Drive, suburbs, the zoo), kitchen (a Muggle kitchen or the Dursleys\' house), hut (Hagrid\'s hut or any small cottage or the hut on the rock), diagon, knockturn, platform, train, castle, great_hall, common_room, dorm, corridor, dungeon (Potions, cellars, the trapdoor chambers), classroom, library, office, hospital, greenhouse, grounds, forest, lake, quidditch, hogsmeade, kitchen';
+
+// faces drawn for the 2008 story that would be wrong in 1991 stay out; the rest are drawn from the cast list
+(function(){const keep=['Mr Ollivander','Ollivander','Garrick Ollivander','Rubeus Hagrid','Argus Filch','Mr Filch','Madam Poppy Pomfrey','Madam Irma Pince','Madam Rolanda Hooch','Professor Filius Flitwick'];
+  const H=window.HAND_PORTRAITS||{};Object.keys(H).forEach(k=>{if(!keep.includes(k))delete H[k]})})();
+const ROBERT={name:'Robert Potter',age:'child',gender:'m',hair_colour:'black',hair_style:'messy',eye_colour:'green',skin:1,features:['scar','glasses'],robes:'muggle_clothes'};
+function drawFace(ctx,name,sp){try{window.drawPortraitHQ(ctx,Object.assign({name},sp||{}))}catch(e){}}
+
+/* ---------- the painting across the top ---------- */
+const cv=$('scene'), cx=cv.getContext('2d'); cx.imageSmoothingEnabled=false;
+const imgCache={}; let cur=null, raf=0, frame=0; const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function key(tag,tod){const t=(tod==='dusk'||tod==='night')?tod:'day';return (ART[tag+'_'+t]?tag:'castle')+'_'+t}
+function paint(tag,tod){const k=key(tag,tod);cur={k,meta:ARTMETA[k]||{}};if(!imgCache[k]){const im=new Image();im.src=ART[k];imgCache[k]=im;im.onload=()=>{if(cur&&cur.k===k)draw()}}draw();if(!raf&&!reduce)raf=requestAnimationFrame(tick)}
+function draw(){if(!cur)return;const im=imgCache[cur.k];if(!im||!im.complete||!im.naturalWidth)return;cx.drawImage(im,0,0);cx.save();cx.scale(2,2);const m=cur.meta,f=frame;
+  (m.sparkles||[]).forEach(([x,y],i)=>{const ph=(f+i*7)%40;if(ph<6){cx.fillStyle=ph<3?'#fff8dc':'#c9c9e8';cx.fillRect(x,y,1,1);if(ph<2){cx.fillRect(x-1,y,1,1);cx.fillRect(x+1,y,1,1);cx.fillRect(x,y-1,1,1);cx.fillRect(x,y+1,1,1)}}});
+  (m.flames||[]).forEach(([x,y],i)=>{const ph=(f+i*5)%8;cx.fillStyle=ph<4?'#ffd36a':'#ff9b3a';cx.fillRect(x,y-(ph<2?1:0),1,1)});
+  (m.smoke||[]).forEach(([x,y],i)=>{for(let k=0;k<3;k++){const ph=((f/3|0)+i*9+k*7)%24;cx.fillStyle='rgba(200,200,215,'+(0.5-ph/48)+')';cx.fillRect(x+Math.round(Math.sin((ph+k*5)/3)*1.5)-1+k,y-ph,2,2)}});cx.restore()}
+function tick(){frame++;if(frame%4===0)draw();raf=requestAnimationFrame(tick)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(raf);raf=0}else if(!reduce&&!raf)raf=requestAnimationFrame(tick)});
+paint('street','day');
+
+/* ---------- text size and typeface ---------- */
+const FONTS={book:"'Crimson Pro', Georgia, serif",classic:"Georgia, 'Times New Roman', serif",clean:"-apple-system, 'Helvetica Neue', Arial, sans-serif",easy:"'Atkinson Hyperlegible', -apple-system, Arial, sans-serif"};
+function applyType(){const r=document.documentElement.style;r.setProperty('--fs',String(+S.textSize||1));r.setProperty('--body',FONTS[S.textFont]||FONTS.book);
+  if(S.textFont==='easy'&&!$('f-easy')){const l=document.createElement('link');l.id='f-easy';l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap';document.head.appendChild(l)}}
+applyType();
+
+/* ---------- state ---------- */
+const STATE_KEY='stone.state', TURNS_KEY='stone.turns', PENDING='stone.pending';
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+let state, turns;
+function fresh(){return {n:0,chapter:2,date:'Sunday 23 June 1991',location:'Privet Drive',tag:'street',tod:'day',gift:'Privet Drive: he has no idea. Strong feelings make strange things happen around him; he cannot call it on purpose.',ledger:[],chronicle:[],cast:{'Robert Potter':ROBERT},ended:false,updated:''}}
+function loadAll(){state=load(STATE_KEY,null)||fresh();turns=load(TURNS_KEY,[])}
+function save(){try{localStorage.setItem(STATE_KEY,JSON.stringify(state));localStorage.setItem(TURNS_KEY,JSON.stringify(turns));$('saved').textContent='SAVED';cloudPush();return true}catch(e){$('saved').textContent='NOT SAVED';return false}}
+let pushT=null;function cloudPush(){if(!window.SYNC||!window.SYNC.on())return;clearTimeout(pushT);pushT=setTimeout(()=>window.SYNC.push().then(r=>{if(r==='behind')cloudAhead()}).catch(()=>{}),400)}
+if(window.SYNC)window.SYNC.onStatus(t=>{if(t)$('saved').textContent=t});
+
+/* ---------- rendering ---------- */
+function para(text,latest){let first=true;return String(text||'').split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{const h=b.split('\n').map(l=>esc(l).replace(/\*(.+?)\*/g,'<i>$1</i>')).join('<br>');const lede=latest&&first&&!/^["“‘'*]/.test(b);first=false;return '<p'+(lede?' class="lede"':'')+'>'+h+'</p>'}).join('')}
+const CH=['','The Boy Who Lived','The Vanishing Glass','The Letters','The Keeper of the Keys','Diagon Alley','The Journey','The Sorting','The Potions Master','The Midnight Duel','Halloween','Quidditch','The Mirror','Flamel','The Dragon','The Forest','The Trapdoor','Two Faces'];
+function renderTurn(t,old,latest){const d=document.createElement('div');d.className='turn'+(old?' old':'')+(latest?' latest':'');
+  let h='';if(t.action&&!/^\[/.test(t.action))h+='<p class="you">'+esc(t.action)+'</p>';
+  if(latest&&t.chapterStart)h+='<p class="chap">CHAPTER '+t.chapter+' · '+esc((CH[t.chapter]||'').toUpperCase())+'</p>';
+  d.innerHTML=h+para(t.scene,latest);return d}
+function renderPresent(t){const d=document.createElement('div');d.className='present';
+  (t.present||[]).slice(0,5).forEach(n=>{const sp=(state.cast||{})[n];if(!sp)return;const w=document.createElement('div');w.className='who';const c=document.createElement('canvas');c.width=64;c.height=64;drawFace(c.getContext('2d'),n,sp);w.appendChild(c);const l=document.createElement('span');l.textContent=n.replace(/^(Professor|Madam|Mr|Mrs) /,'').split(' ')[0];w.appendChild(l);d.appendChild(w)});
+  const lb=document.createElement('button');lb.type='button';lb.className='listen';lb.id='b-listen';lb.textContent=speaking?'■ Stop':'▶ Listen';lb.addEventListener('click',speakCurrent);d.appendChild(lb);
+  const vn=document.createElement('span');vn.className='vnote';vn.id='vstat';d.appendChild(vn);return d}
+function renderAll(){log.innerHTML='';
+  if(!turns.length){log.innerHTML='<div class="empty">The book is open.</div>';renderOptions(null);return}
+  const show=turns.slice(-4);
+  if(show.length>1){const det=document.createElement('details');det.className='earlier';const sm=document.createElement('summary');sm.textContent='EARLIER · '+(show.length-1)+(show.length===2?' PAGE':' PAGES');det.appendChild(sm);show.slice(0,-1).forEach(t=>det.appendChild(renderTurn(t,true,false)));log.appendChild(det)}
+  const last=show[show.length-1];log.appendChild(renderPresent(last));log.appendChild(renderTurn(last,false,true));
+  paint(last.tag||state.tag,last.tod||state.tod);$('loc').textContent=state.location||'';$('date').textContent=state.date||'';renderOptions(last)}
+function renderOptions(t){optsEl.innerHTML='';$('lead').textContent='WHAT DO YOU DO?';
+  if(!t){const b=document.createElement('button');b.type='button';b.className='opt cont';b.textContent='BEGIN';b.addEventListener('click',()=>act('[begin]'));optsEl.appendChild(b);return}
+  if(state.ended){$('lead').textContent='THE END OF THE FIRST YEAR';return}
+  (t.options||[]).forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML='<span class="n">'+(i+1)+'</span><span>'+esc(o)+'</span>';b.addEventListener('click',()=>act(o));optsEl.appendChild(b)})}
+const scrollEnd=()=>setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),40);
+function setBusy(on,txt){busy.hidden=!on;if(txt)busyText.textContent=txt}
+
+/* ---------- narration ---------- */
+const V=window.HOG.voice;let speaking=false,inTurn=false,liveText='';
+function lbtn(on){const b=$('b-listen');if(b){b.textContent=on?'■ Stop':'▶ Listen';b.classList.toggle('on',on)}}
+async function speakCurrent(){if(speaking){V.stop();speaking=false;lbtn(false);return}
+  const text=inTurn&&liveText?liveText:(turns.length?turns[turns.length-1].scene:'');if(!text)return;
+  speaking=true;lbtn(true);await V.speak(String(text).replace(/\*/g,''));speaking=false;lbtn(false)}
+V.onStatus((s,m)=>{const el=$('vstat');if(el)el.textContent=(s==='loading'||s==='error')?m:''});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&speaking){V.stop();speaking=false;lbtn(false)}});
+
+/* ---------- the narrator call ---------- */
+function partialScene(raw){const m=raw.match(/"scene"\s*:\s*"/);if(!m)return null;let i=m.index+m[0].length,out='',e=false;
+  for(;i<raw.length;i++){const ch=raw[i];if(e){if(ch==='n')out+='\n';else if(ch==='t')out+='\t';else if(ch==='u'){const hx=raw.slice(i+1,i+5);if(/^[0-9a-fA-F]{4}$/.test(hx)){out+=String.fromCharCode(parseInt(hx,16));i+=4}}else out+=ch;e=false;continue}
+    if(ch==='\\'){e=true;continue}if(ch==='"'){partialScene.done=true;return out}out+=ch}partialScene.done=false;return out}
+function renderLive(text,done){live.innerHTML=para(text,false)+(done?'<p class="note finishing">Finishing the page and your choices…</p>':'<p class="cursor">▍</p>')}
+function system(){return window.STONE_GM.rules+'\n\n'+window.STONE_GM.bible}
+function prompt(action){
+  const recent=turns.slice(-2).map(t=>(t.action&&!/^\[/.test(t.action)?'ROBERT DID: '+t.action+'\n':'')+t.scene).join('\n\n---\n\n');
+  const last=turns.length?turns[turns.length-1]:null;
+  return ['=== CURRENT ===','Chapter of the book (nearest): '+state.chapter+'\nDate: '+state.date+'\nPlace: '+state.location,
+    '=== GIFT (current stage) ===',state.gift,
+    '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
+    '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
+    '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
+    '=== RECENT PAGES ===',recent||'(none)',
+    '=== OPTIONS OFFERED LAST PAGE ===',last&&last.options?last.options.map((o,i)=>(i+1)+'. '+o).join('\n'):'(none)',
+    '=== ROBERT\'S ACTION ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action==='[continue]'?'Continue.':action,
+    '=== OUTPUT ===',
+    'Reply with one JSON object only, no other text, keys in this order:',
+    '{"scene":"the page, 250-450 words, paragraphs separated by \\n\\n",'+
+    ' "options":["3 or 4 choices, each at most 14 words, written as what Robert does"],'+
+    ' "chapter":the book chapter this page belongs to (2-17),'+
+    ' "date":"in-story date e.g. Wednesday 31 July 1991",'+
+    ' "location":"short place name",'+
+    ' "tag":"one of: '+TAGS+'",'+
+    ' "tod":"day|dusk|night",'+
+    ' "present":["up to 4 named characters on this page who are not Robert, full names as in CAST"],'+
+    ' "cast":[{"name":"Full Name","age":"child|teen|adult|old","gender":"m|f","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum|grey|white","hair_style":"short|parted|swept|messy|spiky|curly|buzz|bob|plaits|long","eye_colour":"brown|blue|green|grey|black","skin":0-4 (0 palest, 4 darkest),"features":["beard","moustache","stubble","freckles","scar","glasses","earring"] (only those that apply),"house":"gryffindor|slytherin|ravenclaw|hufflepuff|ghost|portrait (if known)"} ONLY for named characters appearing for the first time, else []],'+
+    ' "gift":null or the new stage text when the gift grows,'+
+    ' "ledger":null or the FULL updated list when this page diverged from the book,'+
+    ' "log":"one line: what happened on this page",'+
+    ' "end":false (true only on the final page, with "options":[])}'].join('\n\n')}
+
+async function act(text){
+  if(inTurn)return;inTurn=true;liveText='';
+  try{localStorage.setItem(PENDING,JSON.stringify({text,n:state.n,at:Date.now(),tries:((load(PENDING,{}).text===text)?(load(PENDING,{}).tries||0)+1:0)}))}catch(e){}
+  const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
+  optsEl.innerHTML='';input.value='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
+  let out,wake=null,shown=false;
+  const done=()=>{inTurn=false;liveText='';try{wake&&wake.release()}catch(e){}};
+  try{
+    try{if(navigator.wakeLock)wake=await navigator.wakeLock.request('screen')}catch(e){}
+    const sample=await window.claude.use('sample');
+    for(let tries=0;;tries++){
+      try{out=await sample.json(prompt(text),{system:system(),onText:({text:raw})=>{const sc=partialScene(raw);if(sc&&sc.length>12){if(!shown){shown=true;live.hidden=false;setBusy(false)}liveText=sc;renderLive(sc,partialScene.done)}else busyText.textContent='Writing…'}});break}
+      catch(e){if(tries>=2||!['network','overloaded'].includes(e.code))throw e;
+        live.hidden=true;shown=false;setBusy(true,e.code==='network'?'The connection dropped. Trying again…':'Claude is busy. Trying again…');
+        if(document.hidden)await new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener('visibilitychange',f);r()}};document.addEventListener('visibilitychange',f)});
+        await new Promise(r=>setTimeout(r,e.code==='network'?800:4000))}
+    }
+  }catch(e){done();try{localStorage.removeItem(PENDING)}catch(_){}setBusy(false);pend.remove();live.hidden=true;if(e.code!=='cancelled')showErr(e);renderOptions(turns[turns.length-1]||null);scrollEnd();return}
+  done();setBusy(false);live.hidden=true;live.innerHTML='';pend.remove();
+  if(!out||!out.scene){showErr({code:'invalid_json'});renderOptions(turns[turns.length-1]||null);try{localStorage.removeItem(PENDING)}catch(_){}return}
+  const ch=Math.max(1,Math.min(17,parseInt(out.chapter)||state.chapter||2));
+  const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],chapter:ch,chapterStart:ch!==state.chapter||!turns.length,
+    tag:String(out.tag||state.tag),tod:['day','dusk','night'].includes(out.tod)?out.tod:'day',present:Array.isArray(out.present)?out.present.map(String):[],at:new Date().toISOString()};
+  if(Array.isArray(out.cast))out.cast.forEach(c=>{if(c&&c.name&&c.name!=='Robert Potter'){const h=String(c.house||'').toLowerCase();c.house=['ghost','portrait'].includes(h)?h:h?h[0].toUpperCase()+h.slice(1):undefined;state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)}});
+  if(out.gift)state.gift=String(out.gift);
+  if(Array.isArray(out.ledger))state.ledger=out.ledger.map(String).slice(0,30);
+  state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
+  Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
+  turns.push(t);if(turns.length>600)turns=turns.slice(-600);
+  save();try{localStorage.removeItem(PENDING)}catch(_){}
+  renderAll();scrollEnd();
+  if(S.autoRead)speakCurrent();
+}
+function errInfo(e){const m=String(e&&e.message||'');
+  if(e.code==='not_granted')return ['Claude rejected your API key.','Open Settings and paste it again.',m];
+  if(/credit/i.test(m))return ['Your API account is out of credit.','Add credit at platform.claude.com, then try again.',m];
+  if(e.code==='rate_limited')return ['Claude is rate-limiting this key.','Wait a minute, then try again.',m];
+  if(e.code==='network')return ['Lost the connection to Claude.','It tried three times. Keep the game on screen while a page is written, then try again.',''];
+  if(e.code==='overloaded')return ['Claude is overloaded right now.','Wait a minute, then try again.',m];
+  if(e.code==='truncated')return ['The page ran out of room before it finished.','Pick the option again.',''];
+  if(e.code==='invalid_json')return ['The page came back garbled.','Pick the option again.',''];
+  return ['Claude returned an error.','Try again.',m]}
+function showErr(e){const [t,h,m]=errInfo(e);const d=document.createElement('div');d.className='err';d.innerHTML='<b>'+esc(t)+'</b><p>'+esc(h)+'</p>'+(m?'<small>'+esc(m)+'</small>':'');log.appendChild(d)}
+function cloudAhead(){const d=document.createElement('div');d.className='err';d.innerHTML='<b>Your cloud save is further along.</b><p>Another device played on, so this page was not uploaded.</p><button type="button" class="mini">Load the cloud save</button>';log.appendChild(d);scrollEnd();
+  d.querySelector('button').addEventListener('click',async()=>{try{await window.SYNC.pull(true);location.reload()}catch(e){alert(e.message)}})}
+$('free').addEventListener('submit',e=>{e.preventDefault();const v=input.value.trim();if(v)act(v)});
+
+/* ---------- journal and settings ---------- */
+function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false}
+$('m-close').addEventListener('click',()=>$('modal').hidden=true);$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidden=true});
+function journal(tab){tab=tab||'story';
+  const tabs='<div class="tabs">'+[['story','STORY SO FAR'],['changes','CHANGES'],['gift','YOUR GIFT']].map(([k,l])=>'<button data-t="'+k+'" class="'+(k===tab?'on':'')+'">'+l+'</button>').join('')+'</div>';
+  let body='';
+  if(tab==='story'){let lastC=0;body=(state.chronicle||[]).map(l=>{const m=l.match(/^\[(\d+)\]\s*(.*)$/);const c=m?+m[1]:lastC;let h='';if(c!==lastC){h='<div class="k">CHAPTER '+c+' · '+esc((CH[c]||'').toUpperCase())+'</div>';lastC=c}return h+'<p style="margin:.3em 0">'+esc(m?m[2]:l)+'</p>'}).join('')||'<p class="note">Nothing yet.</p>'}
+  if(tab==='changes')body=state.ledger&&state.ledger.length?'<ul>'+state.ledger.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">So far, the story is on the book\'s road.</p>';
+  if(tab==='gift')body='<p>'+esc(state.gift)+'</p>';
+  openModal('JOURNAL',tabs+body);$('m-body').querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>journal(b.dataset.t)))}
+$('b-journal').addEventListener('click',()=>journal());
+const VOICES=V.VOICES||{};
+function settings(){
+  openModal('SETTINGS',
+   '<div class="k">TEXT SIZE</div><select id="st-size"><option value="0.9">Small</option><option value="1">Standard</option><option value="1.12">Large</option><option value="1.25">Larger</option><option value="1.4">Largest</option></select>'+
+   '<div class="k">TYPEFACE</div><select id="st-font"><option value="book">Book (Crimson)</option><option value="classic">Classic (Georgia)</option><option value="clean">Clean (sans serif)</option><option value="easy">Easy reading (Atkinson Hyperlegible)</option></select>'+
+   '<div class="k">NARRATOR</div><select id="st-voice">'+Object.entries(VOICES).map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join('')+'</select>'+
+   '<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-auto" style="width:auto"> Read each page aloud</label></div>'+
+   '<div class="k">MODEL</div><select id="st-model"><option value="claude-opus-5-5">Opus 5.5 (best writing)</option><option value="claude-sonnet-5-5">Sonnet 5.5 (faster, cheaper)</option></select>'+
+   '<div class="row"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="st-think" style="width:auto"> Let Claude think before writing</label></div>'+
+   '<div class="k">ANTHROPIC API KEY</div><input id="st-key" type="password" autocomplete="off">'+
+   '<div class="k">CLOUD SAVE</div><div id="st-cloud"></div>'+
+   '<div class="k">START OVER</div><p class="note">Wipes this story (and its cloud save) and begins again at the cupboard under the stairs.</p><div class="row"><button type="button" class="mini" id="st-reset">Start over</button></div>');
+  $('st-size').value=String(+S.textSize||1);$('st-font').value=S.textFont||'book';$('st-voice').value=S.voice||'bm_george';$('st-auto').checked=!!S.autoRead;$('st-model').value=S.model||'claude-opus-5-5';$('st-think').checked=S.thinking!==false;$('st-key').value=S.apiKey||'';
+  const sv=()=>{S.textSize=+$('st-size').value;S.textFont=$('st-font').value;S.voice=$('st-voice').value;S.autoRead=$('st-auto').checked;S.model=$('st-model').value;S.thinking=$('st-think').checked;S.apiKey=$('st-key').value.trim();applyType();window.HOG.saveSettings();cloudPush()};
+  ['st-size','st-font','st-voice','st-auto','st-model','st-think','st-key'].forEach(id=>$(id).addEventListener('change',sv));
+  $('st-reset').addEventListener('click',async()=>{if(!confirm('Start the story again from the beginning?'))return;state=fresh();turns=[];save();try{if(window.SYNC&&window.SYNC.on())await window.SYNC.push(true)}catch(e){}$('modal').hidden=true;renderAll()});
+  drawCloud()}
+function drawCloud(){const SY=window.SYNC,el=$('st-cloud');if(!SY||!el)return;
+  if(SY.on()){el.innerHTML='<p class="note">On. Every page uploads, and each device loads the newest save.'+(SY.lastOk?' Last upload '+SY.lastOk.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'.':'')+(SY.lastError?' Last problem: '+esc(SY.lastError):'')+'</p><div class="row"><button type="button" class="mini" id="cl-now">Upload now</button><button type="button" class="mini" id="cl-off">Unlink</button></div>';
+    $('cl-now').addEventListener('click',async()=>{try{const r=await SY.push();$('cl-now').textContent=r==='behind'?'Cloud is ahead':'Uploaded'}catch(e){$('cl-now').textContent=e.message}});$('cl-off').addEventListener('click',()=>{SY.disconnect();drawCloud()});return}
+  el.innerHTML='<p class="note">Off. Paste your GitHub gist token (<a href="'+SY.TOKEN_URL+'" target="_blank" rel="noopener">make one</a>).</p><input id="cl-tok" type="password" autocomplete="off" placeholder="ghp_…"><div class="row"><button type="button" class="mini" id="cl-go">Link</button></div><p class="note" id="cl-msg"></p>';
+  $('cl-go').addEventListener('click',async()=>{const m=$('cl-msg');m.textContent='Looking for your cloud save…';try{const r=await SY.connect($('cl-tok').value);if(r.found&&(r.remote.n||0)>(state.n||0)){SY.apply(r.remote);location.reload();return}await SY.push(true);m.textContent='Linked.';drawCloud()}catch(e){m.textContent=e.message}})}
+$('b-settings').addEventListener('click',settings);
+
+/* ---------- start ---------- */
+async function setup(){
+  const SY=window.SYNC;
+  // borrow what the other game on this device already has: the same key and the same cloud token
+  let other={};try{other=JSON.parse(localStorage.getItem('hog.settings')||'{}')}catch(e){}
+  if(!S.apiKey&&other.apiKey){S.apiKey=other.apiKey;window.HOG.saveSettings()}
+  let otherSync=null;try{otherSync=JSON.parse(localStorage.getItem('hog.sync')||'null')}catch(e){}
+  if(SY&&!SY.on()&&otherSync&&otherSync.token){try{const r=await SY.connect(otherSync.token);if(r.found)SY.apply(r.remote)}catch(e){}}
+  else if(SY&&SY.on()){try{await SY.pull()}catch(e){}}
+  if(S.apiKey)return;
+  $('setup').hidden=false;$('s-tok-wrap').hidden=!SY||SY.on();
+  await new Promise(res=>{$('s-go').addEventListener('click',async()=>{const err=$('s-err');err.textContent='';
+    const tok=$('s-tok').value.trim();
+    if(tok&&SY&&!SY.on()){err.textContent='Looking for your cloud save…';try{const r=await SY.connect(tok);if(r.found){SY.apply(r.remote);if(S.apiKey){$('setup').hidden=true;return res()}}
+      }catch(e){err.textContent=e.message;return}}
+    const k=$('s-key').value.trim();if(!S.apiKey&&!/^sk-ant-/.test(k)){err.textContent='Paste an Anthropic API key (it starts with sk-ant-).';return}
+    if(k)S.apiKey=k;window.HOG.saveSettings();$('setup').hidden=true;res()})})}
+async function boot(){
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+  await setup();loadAll();renderAll();if(turns.length>1)scrollEnd();cloudPush();
+  const p=load(PENDING,null);
+  if(p&&p.text&&p.n===state.n&&Date.now()-p.at<6*3600e3){if((p.tries||0)<2){const d=document.createElement('p');d.className='note';d.style.textAlign='center';d.textContent='Picking up your last choice…';log.appendChild(d);setTimeout(()=>{d.remove();act(p.text)},600)}}
+  else if(p)localStorage.removeItem(PENDING);
+  let hiddenAt=0;document.addEventListener('visibilitychange',async()=>{if(document.hidden){hiddenAt=Date.now();return}
+    if(!window.SYNC||!window.SYNC.on()||inTurn||Date.now()-hiddenAt<15000)return;try{if(await window.SYNC.pull())location.reload()}catch(e){}});
+}
+boot();
+})();
+</script>
+</body>
+</html>

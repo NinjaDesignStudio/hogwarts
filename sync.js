@@ -4,7 +4,8 @@
    Local storage stays as a cache for speed; the cloud copy is the real save. Newest save wins (turn number, then time). */
 (function(){
 'use strict';
-const CFG='hog.sync', DESC='Hogwarts cloud save (encrypted)', FILE='hogwarts-save.enc', API='https://api.github.com';
+const NS=(window.GAME_NS||'hog')+'.', STONE=NS==='stone.';
+const CFG=NS+'sync', DESC=STONE?'Stone cloud save (encrypted)':'Hogwarts cloud save (encrypted)', FILE=STONE?'stone-save.enc':'hogwarts-save.enc', API='https://api.github.com';
 const TOKEN_URL='https://github.com/settings/tokens/new?scopes=gist&description=Hogwarts%20cloud%20save';
 const enc=new TextEncoder(), dec=new TextDecoder();
 const b64=u=>{let s='';const a=new Uint8Array(u);for(let i=0;i<a.length;i+=0x8000)s+=String.fromCharCode.apply(null,a.subarray(i,i+0x8000));return btoa(s)};
@@ -64,15 +65,15 @@ async function writeGist(id,token,payload){
 // ---- what travels: settings (with the API key), the passphrase, the state and every turn
 function snapshot(){
   const S=window.HOG.settings;let state=null,turns=[];
-  try{state=JSON.parse(localStorage.getItem('hog.state')||'null');turns=JSON.parse(localStorage.getItem('hog.turns')||'[]')}catch(e){}
+  try{state=JSON.parse(localStorage.getItem(NS+'state')||'null');turns=JSON.parse(localStorage.getItem(NS+'turns')||'[]')}catch(e){}
   return {settings:{apiKey:S.apiKey,model:S.model,thinking:S.thinking,voice:S.voice,autoRead:S.autoRead,rate:S.rate},
-    pass:localStorage.getItem('hog.pass')||'',state,turns,n:(state&&state.n)||0,updated:(state&&state.updated)||'',device:navigator.userAgent.slice(0,80),at:new Date().toISOString()};
+    pass:localStorage.getItem(NS+'pass')||'',state,turns,n:(state&&state.n)||0,updated:(state&&state.updated)||'',device:navigator.userAgent.slice(0,80),at:new Date().toISOString()};
 }
 function apply(p){
   if(p.settings){Object.assign(window.HOG.settings,p.settings);window.HOG.saveSettings()}
-  if(p.pass)localStorage.setItem('hog.pass',p.pass);
-  if(p.state)localStorage.setItem('hog.state',JSON.stringify(p.state));
-  if(Array.isArray(p.turns))localStorage.setItem('hog.turns',JSON.stringify(p.turns));
+  if(p.pass)localStorage.setItem(NS+'pass',p.pass);
+  if(p.state)localStorage.setItem(NS+'state',JSON.stringify(p.state));
+  if(Array.isArray(p.turns))localStorage.setItem(NS+'turns',JSON.stringify(p.turns));
 }
 const newer=(a,b)=>(a.n||0)>(b.n||0)||((a.n||0)===(b.n||0)&&String(a.updated||'')>String(b.updated||''));
 const local=()=>{const s=snapshot();return {n:s.n,updated:s.updated}};
