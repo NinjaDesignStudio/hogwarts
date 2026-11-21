@@ -123,11 +123,11 @@ function prompt(action){
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
     '=== RECENT PAGES ===',recent||'(none)',
     '=== OPTIONS OFFERED LAST PAGE ===',last&&last.options?last.options.map((o,i)=>(i+1)+'. '+o).join('\n'):'(none)',
-    '=== ROBERT\'S ACTION ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action,
+    '=== ROBERT\'S ACTION (the player\'s words; "I" means Robert; write the page in third person) ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action,
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
     '{"scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
-    ' "options":["3 or 4 choices, each at most 14 words, written as what Robert does"],'+
+    ' "options":["3 or 4 choices, each at most 14 words, in the first person as the player, e.g. \"I grab the key.\" (never he/Robert)"],'+
     ' "chapter":the book chapter this page belongs to (2-17),'+
     ' "date":"in-story date e.g. Wednesday 31 July 1991",'+
     ' "location":"short place name",'+
