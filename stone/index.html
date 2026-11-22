@@ -63,8 +63,8 @@ p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);pad
 .opt{appearance:none;text-align:left;font:inherit;font-size:calc(17px*var(--fs,1));line-height:1.38;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:4px;padding:11px 12px;display:flex;gap:10px;cursor:pointer}
 .opt:active{transform:translateY(1px)}.opt .n{font-family:var(--display);font-size:9px;color:var(--accent);flex:none;width:14px;padding-top:4px}
 .opt.cont{justify-content:center;background:var(--accent);color:#fff;border-color:var(--accent);font-family:var(--display);font-size:9px;letter-spacing:.08em;padding:14px}
-#free{display:flex;gap:8px}
-#action{flex:1;min-width:0;font:inherit;font-style:italic;font-size:calc(17px*var(--fs,1));color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+#free{display:flex;gap:8px;align-items:flex-end}
+#action{flex:1;min-width:0;resize:none;overflow-y:auto;line-height:1.4;display:block;font:inherit;font-style:italic;font-size:calc(17px*var(--fs,1));color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
 .go{font-family:var(--display);font-size:9px;color:#fff;background:var(--accent);border:0;border-radius:4px;padding:0 16px;cursor:pointer}
 .bar{display:flex;gap:8px;margin-top:10px}.bar .sp{flex:1}
 .mini{font-family:var(--display);font-size:7px;letter-spacing:.06em;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:4px;padding:10px 12px;cursor:pointer}
@@ -92,7 +92,7 @@ p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);pad
   <div class="dock">
     <div class="lead"><span id="lead">WHAT DO YOU DO?</span><span id="saved"></span></div>
     <div id="options"></div>
-    <form id="free" autocomplete="off"><input id="action" placeholder="Or tell me what you do…" enterkeyhint="go"><button class="go" id="b-go">Go</button></form>
+    <form id="free" autocomplete="off"><textarea id="action" rows="1" placeholder="Or tell me what you do…" enterkeyhint="go"></textarea><button class="go" id="b-go">Go</button></form>
     <div class="bar"><button type="button" class="mini" id="b-journal">Journal</button><span class="sp"></span><button type="button" class="mini" id="b-settings">Settings</button></div>
   </div>
 </div>
@@ -235,7 +235,7 @@ async function act(text){
   if(inTurn)return;inTurn=true;liveText='';
   try{localStorage.setItem(PENDING,JSON.stringify({text,n:state.n,at:Date.now(),tries:((load(PENDING,{}).text===text)?(load(PENDING,{}).tries||0)+1:0)}))}catch(e){}
   const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
-  optsEl.innerHTML='';input.value='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
+  optsEl.innerHTML='';input.value='';input.style.height='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
   let out,wake=null,shown=false;
   const done=()=>{inTurn=false;liveText='';try{wake&&wake.release()}catch(e){}};
   try{
@@ -278,6 +278,10 @@ function showErr(e){const [t,h,m]=errInfo(e);const d=document.createElement('div
 function cloudAhead(){const d=document.createElement('div');d.className='err';d.innerHTML='<b>Your cloud save is further along.</b><p>Another device played on, so this page was not uploaded.</p><button type="button" class="mini">Load the cloud save</button>';log.appendChild(d);scrollEnd();
   d.querySelector('button').addEventListener('click',async()=>{try{await window.SYNC.pull(true);location.reload()}catch(e){alert(e.message)}})}
 $('free').addEventListener('submit',e=>{e.preventDefault();const v=input.value.trim();if(v)act(v)});
+function growInput(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight+2,Math.round(window.innerHeight*0.4))+'px'}
+input.addEventListener('input',growInput);
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('free').requestSubmit()}});
+
 
 /* ---------- journal and settings ---------- */
 function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false}

@@ -149,7 +149,7 @@ async function act(text){
   stopSpeaking();
   try{if(DB&&UID){const st=await col().doc('state').get();if(st.exists){const d=st.data();if(Array.isArray(d.changes))state.changes=JSON.parse(JSON.stringify(d.changes));if(typeof d.self==='string')state.self=d.self;if(d.cast&&typeof d.cast==='object')state.cast=JSON.parse(JSON.stringify(d.cast))}}}catch(e){}
   const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
-  optsEl.innerHTML='';input.value='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
+  optsEl.innerHTML='';input.value='';input.style.height='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
   let out,shown=false;const clearPending=()=>{try{localStorage.removeItem('stone.pending')}catch(_){}};
   try{
     for(let tries=0;;tries++){
@@ -182,6 +182,10 @@ function errInfo(e){const m=String(e&&e.message||'');
   return ['Something went wrong writing the page.','Pick the option again.',m]}
 function showErr(e){const [t,h,m]=errInfo(e);const d=document.createElement('div');d.className='err';d.innerHTML='<b>'+esc(t)+'</b><p>'+esc(h)+'</p>'+(m?'<small>'+esc(m)+'</small>':'');log.appendChild(d)}
 $('free').addEventListener('submit',e=>{e.preventDefault();const v=input.value.trim();if(v)act(v)});
+function growInput(){input.style.height='auto';input.style.height=Math.min(input.scrollHeight+2,Math.round(window.innerHeight*0.4))+'px'}
+input.addEventListener('input',growInput);
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('free').requestSubmit()}});
+
 
 /* ---------- journal and settings ---------- */
 function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false}
