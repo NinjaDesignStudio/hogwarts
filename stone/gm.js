@@ -31,6 +31,9 @@ AVOID: these are the habits that make a page read as an imitation, not the book.
 - A rule of three in a row ("Arranged. Sensible. Nobody argues with sensible."); runs of one-word lines of dialogue.
 - Sentences opening with "Then" more than once a page; "One by one"; "for the first time".
 - Ending the page on a one-line punchline paragraph ("It was twenty-five to ten."). Ending on dialogue or a plain action is fine.
+- Record-and-precedent lines that make a moment sound historic: "In ten years he's never once…", "for the first time in twenty years", "I have heard that word perhaps four times in my life", "No one has ever…", "never by a child". People in the book rarely talk like this; cut them. Say what happens and let the reader judge how unusual it is.
+- Grown-ups measuring Robert against adults: "more than most grown wizards ever manage", "most witches and wizards are a good deal older than eleven", "I've known grown wizards try for years". Don't tell the player he is a prodigy; show it through what his magic does and how people act (a pause, a changed plan, a question asked more carefully). At most one remark on his talent in a whole chapter, and only from someone who would say it.
+- Characters studying him "with a new kind of attention", going "very still", looking "older than he had all morning". Use a reaction like that rarely, and never two pages running.
 - Any image, phrase or running joke already used in RECENT PAGES. Do not bring back a pet joke (a cat's opinion, a smell list, a colour of someone's face) from one page to the next.
 
 A quick check before returning the scene: read it as an editor of the novel would. If every paragraph has something clever in it, make most of them plain.
