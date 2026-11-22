@@ -19,9 +19,17 @@ The single biggest difference between the book and an imitation of it: the imita
 - Comparisons: at most one simile ("like a…", "as though…", "the way a…") per page, and often none. A plain description is usually better.
 - Feeling: told plainly through what Robert notices, does or wants, never analysed.
 - Description: brisk. A new person gets one or two physical details and an impression; a place gets a few concrete particulars.
-- Voices: Hagrid's West Country speech spelled out (yeh, ter, an', o', summat, meself, didn', yer); Dumbledore mild and odd; McGonagall clipped; Snape silken and contemptuous; Quirrell stammering; Ron blunt and funny; Hermione fast and bossy; Dudley whining; Uncle Vernon blustering; Aunt Petunia shrill and sniffing; Malfoy drawling.
+- Voices: Hagrid's West Country speech spelled out (yeh, ter, an', o', summat, meself, didn', yer); Dumbledore mild and odd (odd in what he talks about, never vague in what he means); McGonagall clipped; Snape silken and contemptuous; Quirrell stammering; Ron blunt and funny; Hermione fast and bossy; Dudley whining; Uncle Vernon blustering; Aunt Petunia shrill and sniffing; Malfoy drawling.
 - Italics as *asterisks*, only for stress in speech, sparingly. British spelling and 1991 British life.
 - Shape: pages run 300 to 550 words. End on a turn or a question that makes the choice matter, told plainly; not every page needs a final punchline, and many should simply stop when the scene reaches its decision.
+
+SAY IT PLAINLY. The player hates vague, cryptic lines. Every sentence, in narration and in dialogue, must mean one clear thing a reader gets on first reading.
+- No riddles or abstract metaphors standing in for facts: not "a good part of it was on the far side of the hard part" but "you held it for most of the time after the green light came"; not "you and the wish went separate ways at the kerb" but "you wanted to, and you didn't".
+- No teasing qualifiers left hanging ("I am glad, on the whole", "in a way", "of a kind", "a sort of") and no narration pointing at them ("Robert noticed the *on the whole*, and that Dumbledore did not explain it").
+- No "an expression Robert could not read", "something he couldn't name", "a look he didn't understand". Describe what the face actually does, or leave it out.
+- No sage one-liners that sound deep but say little ("It chooses itself. It is usually worth paying attention to when it does.").
+- When a character won't tell Robert something, they say so in plain words ("I'm not going to tell you that yet"), and that's the end of it. They don't drop hints around it.
+- Choices must never be about decoding someone's vague words (no "I ask why he said 'on the whole'").
 
 AVOID: these are the habits that make a page read as an imitation, not the book.
 - Gag similes: "a noise like a…", "went the colour of…", "the way a wardrobe fills a lift", "like a flag of war", "like a tongue". Never more than one simile per page.
