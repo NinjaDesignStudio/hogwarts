@@ -207,6 +207,7 @@ function prompt(action){
   return ['=== CURRENT ===','Chapter of the book (nearest): '+state.chapter+'\nDate: '+state.date+'\nPlace: '+state.location,
     '=== GIFT LADDER (STAGE is where Robert is now; >> marks it) ===',ladderText(),
     '=== PLAYER\'S CHANGES TO THE WORLD (always true from the start of the story; they override the bible and the book) ===',(state.changes&&state.changes.length?state.changes.map(x=>'- '+x).join('\n'):'(none)'),
+    '=== WHO ROBERT IS BECOMING (from the player\'s choices) ===',state.self||'(not yet shown: he starts as the book\'s boy, and the player\'s choices will shape him)',
     '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
     '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
@@ -226,6 +227,7 @@ function prompt(action){
     ' "cast":[{"name":"Full Name","age":"child|teen|adult|old","gender":"m|f","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum|grey|white","hair_style":"short|parted|swept|messy|spiky|curly|buzz|bob|plaits|long","eye_colour":"brown|blue|green|grey|black","skin":0-4 (0 palest, 4 darkest),"features":["beard","moustache","stubble","freckles","scar","glasses","earring"] (only those that apply),"house":"gryffindor|slytherin|ravenclaw|hufflepuff|ghost|portrait (if known)"} ONLY for named characters appearing for the first time, else []],'+
     ' "gift":null, or the new stage number (2-5) on the page where Robert moves up a rung,'+
     ' "ledger":null or the FULL updated list when this page diverged from the book,'+
+    ' "self":null, or a fresh 2-3 sentence summary of who Robert is becoming when the player\'s choices have shifted him,'+
     ' "log":"one line: what happened on this page",'+
     ' "end":false (true only on the final page, with "options":[])}'].join('\n\n')}
 
@@ -255,6 +257,7 @@ async function act(text){
   if(Array.isArray(out.cast))out.cast.forEach(c=>{if(c&&c.name&&c.name!=='Robert Potter'){const h=String(c.house||'').toLowerCase();c.house=['ghost','portrait'].includes(h)?h:h?h[0].toUpperCase()+h.slice(1):undefined;state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)}});
   {const g=parseInt(out.gift);if(g>(state.giftStage||1)&&g<=5){state.giftStage=g;t.giftUp=g}}
   if(Array.isArray(out.ledger))state.ledger=out.ledger.map(String).slice(0,30);
+  if(out.self&&typeof out.self==='string')state.self=out.self.slice(0,700);
   state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
   Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
   turns.push(t);if(turns.length>600)turns=turns.slice(-600);
