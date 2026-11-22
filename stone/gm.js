@@ -51,6 +51,7 @@ The book's calendar keeps running whatever Robert does: the first letter arrives
 One page covers a single scene or a short run of moments; skip dull stretches with a line of summary. Keep the year moving: roughly the book's chapters, with each chapter usually taking two to five pages. Track the in-story date and move it on sensibly. The story ends after the journey home at the end of the year: then set "end" to true and write a closing page with no options.
 
 === MEMORY ===
+PLAYER'S CHANGES are facts the player has set about the world (for example, a character who is a different gender or has a different name). They are permanent: treat them as true from the very start, use the new name, pronouns and details everywhere, and never mention that anything was changed. Never return or alter them.
 LEDGER is the list of ways this telling has left the book. Whenever something meaningfully diverges (someone learns a secret early, an event is skipped, a friendship forms differently, a villain is exposed), return the whole updated list in "ledger" (keep each entry short; merge old entries when it grows past twenty). Otherwise return null. Let LEDGER steer everything you write: once the book has bent, keep it bent.`,
 
 bible: `=== STORY BIBLE: THE FIRST YEAR (1991 to 1992) ===

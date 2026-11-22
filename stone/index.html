@@ -206,6 +206,7 @@ function prompt(action){
   const last=turns.length?turns[turns.length-1]:null;
   return ['=== CURRENT ===','Chapter of the book (nearest): '+state.chapter+'\nDate: '+state.date+'\nPlace: '+state.location,
     '=== GIFT LADDER (STAGE is where Robert is now; >> marks it) ===',ladderText(),
+    '=== PLAYER\'S CHANGES TO THE WORLD (always true from the start of the story; they override the bible and the book) ===',(state.changes&&state.changes.length?state.changes.map(x=>'- '+x).join('\n'):'(none)'),
     '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
     '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
