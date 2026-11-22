@@ -127,7 +127,7 @@ function prompt(action){
   const recent=turns.slice(-2).map(t=>(t.action&&!/^\[/.test(t.action)?'ROBERT DID: '+t.action+'\n':'')+t.scene).join('\n\n---\n\n');
   const last=turns.length?turns[turns.length-1]:null;
   return [window.STONE_GM.rules,window.STONE_GM.bible,
-    '=== CURRENT ===','Chapter of the book (nearest): '+state.chapter+'\nDate: '+state.date+'\nPlace: '+state.location,
+    '=== CURRENT ===','Chapter of the book (nearest): '+state.chapter+'\nPages spent in this chapter so far: '+(state.chronicle||[]).filter(l=>String(l).startsWith('['+state.chapter+']')).length+'\nDate: '+state.date+'\nPlace: '+state.location,
     '=== GIFT LADDER (STAGE is where Robert is now; >> marks it) ===',ladderText(),
     '=== PLAYER\'S CHANGES TO THE WORLD (always true from the start of the story; they override the bible and the book) ===',(state.changes&&state.changes.length?state.changes.map(x=>'- '+x).join('\n'):'(none)'),
     '=== WHO ROBERT IS BECOMING (from the player\'s choices) ===',state.self||'(not yet shown: he starts as the book\'s boy, and the player\'s choices will shape him)',
