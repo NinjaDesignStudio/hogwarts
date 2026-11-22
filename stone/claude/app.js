@@ -145,6 +145,7 @@ async function act(text){
   if(inTurn||!SAMPLE)return;inTurn=true;liveText='';
   try{const p=JSON.parse(localStorage.getItem('stone.pending')||'{}');localStorage.setItem('stone.pending',JSON.stringify({text,n:state.n,at:Date.now(),tries:p.text===text?(p.tries||0)+1:0}))}catch(e){}
   stopSpeaking();
+  try{if(DB&&UID){const st=await col().doc('state').get();if(st.exists){const d=st.data();if(Array.isArray(d.changes))state.changes=JSON.parse(JSON.stringify(d.changes));if(d.cast&&typeof d.cast==='object')state.cast=JSON.parse(JSON.stringify(d.cast))}}}catch(e){}
   const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
   optsEl.innerHTML='';input.value='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
   let out,shown=false;const clearPending=()=>{try{localStorage.removeItem('stone.pending')}catch(_){}};
