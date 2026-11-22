@@ -112,6 +112,8 @@ function partialScene(raw){const m=raw.match(/"scene"\s*:\s*"/);if(!m)return nul
   for(;i<raw.length;i++){const ch=raw[i];if(e){if(ch==='n')out+='\n';else if(ch==='t')out+='\t';else if(ch==='u'){const hx=raw.slice(i+1,i+5);if(/^[0-9a-fA-F]{4}$/.test(hx)){out+=String.fromCharCode(parseInt(hx,16));i+=4}}else out+=ch;e=false;continue}
     if(ch==='\\'){e=true;continue}if(ch==='"'){partialScene.done=true;return out}out+=ch}partialScene.done=false;return out}
 function renderLive(text,done){live.innerHTML=para(text,false)+(done?'<p class="note finishing">Finishing the page and your choices…</p>':'<p class="cursor">▍</p>')}
+function packText(){const P=state.pack||{};const L=(a)=>Array.isArray(a)&&a.length?a.map(x=>'- '+x).join('\n'):'- (nothing yet)';
+  return 'BELONGINGS (what he owns and where it is):\n'+L(P.items)+'\nMONEY: '+(P.gold||'(unknown)')+'\nSPELLS HE KNOWS (and how well):\n'+L(P.spells)+'\nTHINGS HE KNOWS (secrets, clues, facts he has learnt):\n'+L(P.knows)}
 function prompt(action){
   const recent=turns.slice(-2).map(t=>(t.action&&!/^\[/.test(t.action)?'ROBERT DID: '+t.action+'\n':'')+t.scene).join('\n\n---\n\n');
   const last=turns.length?turns[turns.length-1]:null;
@@ -120,6 +122,7 @@ function prompt(action){
     '=== GIFT LADDER (STAGE is where Robert is now; >> marks it) ===',ladderText(),
     '=== PLAYER\'S CHANGES TO THE WORLD (always true from the start of the story; they override the bible and the book) ===',(state.changes&&state.changes.length?state.changes.map(x=>'- '+x).join('\n'):'(none)'),
     '=== WHO ROBERT IS BECOMING (from the player\'s choices) ===',state.self||'(not yet shown: he starts as the book\'s boy, and the player\'s choices will shape him)',
+    '=== ROBERT\'S POCKETS (kept by you, never shown as a list in the story) ===',packText(),
     '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
     '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
@@ -139,6 +142,7 @@ function prompt(action){
     ' "cast":[{"name":"Full Name","age":"child|teen|adult|old","gender":"m|f","hair_colour":"black|dark_brown|brown|light_brown|auburn|ginger|blond|platinum|grey|white","hair_style":"short|parted|swept|messy|spiky|curly|buzz|bob|plaits|long","eye_colour":"brown|blue|green|grey|black","skin":0-4 (0 palest, 4 darkest),"features":["beard","moustache","stubble","freckles","scar","glasses","earring"] (only those that apply),"house":"gryffindor|slytherin|ravenclaw|hufflepuff|ghost|portrait (if known)"} ONLY for named characters appearing for the first time, else []],'+
     ' "gift":null, or the new stage number (2-5) on the page where Robert moves up a rung,'+
     ' "ledger":null or the FULL updated list when this page diverged from the book,'+
+    ' "pack":null, or the FULL updated pockets object {"items":["..."],"gold":"...","spells":["..."],"knows":["..."]} when anything in it changed on this page,'+
     ' "self":null, or a fresh 2-3 sentence summary of who Robert is becoming when the player\'s choices have shifted him,'+
     ' "log":"one line: what happened on this page",'+
     ' "end":false (true only on the final page, with "options":[])}'].join('\n\n')}
@@ -147,7 +151,7 @@ async function act(text){
   if(inTurn||!SAMPLE)return;inTurn=true;liveText='';
   try{const p=JSON.parse(localStorage.getItem('stone.pending')||'{}');localStorage.setItem('stone.pending',JSON.stringify({text,n:state.n,at:Date.now(),tries:p.text===text?(p.tries||0)+1:0}))}catch(e){}
   stopSpeaking();
-  try{if(DB&&UID){const st=await col().doc('state').get();if(st.exists){const d=st.data();if(Array.isArray(d.changes))state.changes=JSON.parse(JSON.stringify(d.changes));if(typeof d.self==='string')state.self=d.self;if(d.cast&&typeof d.cast==='object')state.cast=JSON.parse(JSON.stringify(d.cast))}}}catch(e){}
+  try{if(DB&&UID){const st=await col().doc('state').get();if(st.exists){const d=st.data();if(Array.isArray(d.changes))state.changes=JSON.parse(JSON.stringify(d.changes));if(typeof d.self==='string')state.self=d.self;if(d.pack&&typeof d.pack==='object')state.pack=JSON.parse(JSON.stringify(d.pack));if(d.cast&&typeof d.cast==='object')state.cast=JSON.parse(JSON.stringify(d.cast))}}}catch(e){}
   const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
   optsEl.innerHTML='';input.value='';input.style.height='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
   let out,shown=false;const clearPending=()=>{try{localStorage.removeItem('stone.pending')}catch(_){}};
@@ -167,6 +171,7 @@ async function act(text){
   {const g=parseInt(out.gift);if(g>(state.giftStage||1)&&g<=5){state.giftStage=g;t.giftUp=g}}
   if(Array.isArray(out.ledger))state.ledger=out.ledger.map(String).slice(0,30);
   if(out.self&&typeof out.self==='string')state.self=out.self.slice(0,700);
+  if(out.pack&&typeof out.pack==='object'){const A=a=>Array.isArray(a)?a.map(String).slice(0,40):[];state.pack={items:A(out.pack.items),gold:String(out.pack.gold||(state.pack&&state.pack.gold)||''),spells:A(out.pack.spells),knows:A(out.pack.knows)}}
   state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
   Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
   turns.push(t);if(turns.length>6)turns=turns.slice(-6);
@@ -191,10 +196,11 @@ input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isCompo
 function openModal(title,html){$('m-title').textContent=title;$('m-body').innerHTML=html;$('modal').hidden=false}
 $('m-close').addEventListener('click',()=>$('modal').hidden=true);$('modal').addEventListener('click',e=>{if(e.target.id==='modal')$('modal').hidden=true});
 function journal(tab){tab=tab||'story';
-  const tabs='<div class="tabs">'+[['story','STORY SO FAR'],['changes','CHANGES'],['gift','YOUR GIFT']].map(([k,l])=>'<button type="button" data-t="'+k+'" class="'+(k===tab?'on':'')+'">'+l+'</button>').join('')+'</div>';
+  const tabs='<div class="tabs">'+[['story','STORY SO FAR'],['changes','CHANGES'],['gift','YOUR GIFT'],['pack','POCKETS']].map(([k,l])=>'<button type="button" data-t="'+k+'" class="'+(k===tab?'on':'')+'">'+l+'</button>').join('')+'</div>';
   let body='';
   if(tab==='story'){let lastC=0;body=(state.chronicle||[]).map(l=>{const m=l.match(/^\[(\d+)\]\s*(.*)$/);const c=m?+m[1]:lastC;let h='';if(c!==lastC){h='<div class="k">CHAPTER '+c+' · '+esc((CH[c]||'').toUpperCase())+'</div>';lastC=c}return h+'<p style="margin:.3em 0">'+esc(m?m[2]:l)+'</p>'}).join('')||'<p class="note">Nothing yet.</p>'}
   if(tab==='changes')body=state.ledger&&state.ledger.length?'<ul>'+state.ledger.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">So far, the story is on the book\'s road.</p>';
+  if(tab==='pack'){const P=state.pack||{};const sec=(t,a)=>'<div class="k">'+t+'</div>'+(Array.isArray(a)&&a.length?'<ul>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'<p class="note">Nothing yet.</p>');body=sec('BELONGINGS',P.items)+'<div class="k">MONEY</div><p>'+esc(P.gold||'Unknown')+'</p>'+sec('SPELLS',P.spells)+sec('WHAT YOU KNOW',P.knows)}
   if(tab==='gift'){const L=window.STONE_GM.ladder,st=state.giftStage||1;body=L.map(r=>{const now=r.stage===st,done=r.stage<st;return '<div class="rung'+(now?' now':'')+(r.stage>st?' later':'')+'"><div class="k">'+(now?'YOU ARE HERE · ':done?'DONE · ':'')+'STAGE '+r.stage+' · '+esc(r.name.toUpperCase())+'</div><p class="note" style="margin:0 0 6px">'+esc(r.when)+'</p>'+(r.stage<=st?'<ul>'+r.can.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>':'<ul>'+r.can.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>')+(now?'<p><b>Not yet:</b> '+esc(r.cant.join(' '))+'</p><p><b>Next rung unlocks with:</b> '+esc(r.unlock)+'</p>':'')+'</div>'}).join('')+'<p class="note">Never this year: Dark curses, controlling a person like a puppet, wiping memories, Apparition, beating a prepared grown wizard head-on.</p>'}
   openModal('JOURNAL',tabs+body);$('m-body').querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>journal(b.dataset.t)))}
 $('b-journal').addEventListener('click',()=>journal());
