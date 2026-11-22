@@ -203,6 +203,15 @@ function renderLive(text,done){live.innerHTML=para(text,false)+(done?'<p class="
 function system(){return window.STONE_GM.rules+'\n\n'+window.STONE_GM.bible}
 function packText(){const P=state.pack||{};const L=(a)=>Array.isArray(a)&&a.length?a.map(x=>'- '+x).join('\n'):'- (nothing yet)';
   return 'BELONGINGS (what he owns and where it is):\n'+L(P.items)+'\nMONEY: '+(P.gold||'(unknown)')+'\nSPELLS HE KNOWS (and how well):\n'+L(P.spells)+'\nTHINGS HE KNOWS (secrets, clues, facts he has learnt):\n'+L(P.knows)}
+function wornPhrases(){
+  const pages=turns.slice(-8).map(t=>String(t.scene||'').toLowerCase().replace(/[“”"’']/g,"'"));
+  if(pages.length<3)return '';
+  const watch=['read it twice','read it through','underlined twice','without a word','for a long moment','for a long while','if anything','pushchair','pram','dog barked','car door','very still','very quietly','own affair','your business','a new kind of','older than he had','p.s.','tapped on the glass','at the window','never once','first time in','in my life','grown witches','grown wizards','the way he had','did not say which','not quite','for a moment'];
+  const out=[];for(const w of watch){const n=pages.filter(p=>p.includes(w)).length;if(n>=2)out.push('"'+w+'" ('+n+' of the last '+pages.length+' pages)')}
+  const stop=new Set('the a an and of to in on at it he she his her him was were had have be i you that this with for as but not so then they them their there from by or if is are one into up out down back over said what when all would could just very been no'.split(' '));
+  const seen={};pages.forEach((p,i)=>{const w=p.replace(/[^a-z' ]+/g,' ').split(/\s+/).filter(Boolean);const mine=new Set();for(let k=0;k+4<=w.length;k++){const g=w.slice(k,k+4);if(g.filter(x=>!stop.has(x)).length<2)continue;mine.add(g.join(' '))}mine.forEach(g=>{seen[g]=(seen[g]||0)+1})});
+  Object.keys(seen).filter(g=>seen[g]>=3&&!/robert|figg|hagrid|dumbledore|petunia|vernon|dudley|malfoy|quirrell|draconia|pryce|said robert/.test(g)).slice(0,15).forEach(g=>out.push('"'+g+'" ('+seen[g]+' pages)'));
+  return out.join('\n')}
 function prompt(action){
   const recent=turns.slice(-2).map(t=>(t.action&&!/^\[/.test(t.action)?'ROBERT DID: '+t.action+'\n':'')+t.scene).join('\n\n---\n\n');
   const last=turns.length?turns[turns.length-1]:null;
@@ -215,6 +224,7 @@ function prompt(action){
     '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
     '=== RECENT PAGES ===',recent||'(none)',
+    '=== WORN-OUT PHRASES (used too often lately; do not use any of them on this page) ===',wornPhrases()||'(none)',
     '=== OPTIONS OFFERED LAST PAGE ===',last&&last.options?last.options.map((o,i)=>(i+1)+'. '+o).join('\n'):'(none)',
     '=== ROBERT\'S ACTION (the player\'s words; "I" means Robert; write the page in third person) ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action==='[continue]'?'Continue.':action,
     '=== OUTPUT ===',
