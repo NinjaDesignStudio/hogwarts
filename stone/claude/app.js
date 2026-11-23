@@ -143,6 +143,7 @@ function prompt(action,redo){
     '=== OPTIONS OFFERED LAST PAGE ===',last&&last.options?last.options.map((o,i)=>(i+1)+'. '+o).join('\n'):'(none)',
     '=== ROBERT\'S ACTION (the player\'s words; "I" means Robert; write the page in third person) ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action,
     redo?'=== REDO ===\nThe player asked for the last page to be written again from the same action. Write a clearly different page: change the events or outcome where his note asks, and use fresh wording throughout.'+(redo.note?'\nWhat the player wants changed: '+redo.note:'')+(redo.exact?'':'\nPOCKETS, LEDGER and WHO ROBERT IS BECOMING may already include what happened on the rejected page; return corrected full versions if the new page differs.')+'\nREJECTED VERSION (do not reuse its wording):\n'+redo.rejected:'',
+    '=== FINAL CHECK BEFORE YOU WRITE ===\nThe player has flagged these again and again. None may appear on this page: "in twenty years I\'ve never…", "never once", "the first time in", "no one has ever"; comparing Robert with grown wizards or with other people in the past; "if anything", "on the whole", "an expression he could not read", riddling metaphors; countdowns of time left; a teacher or adult instantly working out what he did; a character objecting a second time; a planted hook paid off against him. Say things plainly.',
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
     '{"plan":"one or two sentences, never shown to the player: what happens on this page and where it stops, checked against PROPORTION, PACING, NO NAGGING and SAY IT PLAINLY",'+
@@ -163,6 +164,20 @@ function prompt(action,redo){
     ' "log":"one line: what happened on this page",'+
     ' "end":false (true only on the final page, with "options":[])}'].filter(x=>x!=='').join('\n\n')}
 
+/* ---------- automatic tell check: catches banned patterns the rules missed ---------- */
+const TELLS=[/\b(?:\w+|\d+) years\b[^.!?]*\bnever\b/i,/\bnever\b[^.!?]*\b(?:in|for) (?:\w+ ){0,2}years\b/i,/\bnever once\b/i,/\bfor the first time in\b/i,
+  /\b(?:in|of) (?:all )?(?:my|his|her|your) (?:life|years)\b/i,/\b(?:no ?one|nobody) (?:has |had )?ever\b/i,/\bgrown (?:witch|wizard)(?:es|s)?\b/i,/\bolder than eleven\b/i,
+  /\b(?:boys|girls|pupils|students|children) (?:a good deal |far |much )?(?:better|cleverer|braver|older)\b/i,/\bif anything\b/i,/\bon the whole\b/i,
+  /\b(?:expression|look|face)\b[^.!?]*\bcould(?:n't| not) (?:quite )?read\b/i,/\bfar side of\b/i,/\b(?:minutes|quarter of an hour|half an hour|an hour) left\b/i,
+  /\bwe have (?:perhaps |only |about )?(?:\w+ )?(?:minutes|quarter of an hour|half an hour)\b/i,/\bwent very still\b/i,/\ba new kind of attention\b/i];
+function findTells(scene){return [...new Set(String(scene).split(/(?<=[.!?…]["”’']?)\s+/).filter(x=>TELLS.some(r=>r.test(x))))].slice(0,8)}
+async function polishScene(scene){const bad=findTells(scene);if(!bad.length||!SAMPLE)return scene;setBusy(true,'Polishing the page…');
+  const p=['You are copy-editing one page of a story written in the style of the first Harry Potter novel.','These sentences break the house style:',bad.map(b=>'- '+b).join('\n'),
+    'House style: no record-and-precedent lines (so many years, never once, the first time in, no one has ever, in all my life); no measuring an eleven-year-old against grown wizards or against other people in the past; no vague hedges (if anything, on the whole, an expression he could not read, the far side of); no countdowns of time left; no "went very still" or "a new kind of attention".',
+    'Rewrite each sentence so it keeps its job in the scene and the speaker\'s voice but drops the problem. If it adds nothing without the problem, cut it down to what remains (which may be nothing). Keep any quotation marks that open or close speech in the sentence, so the page\'s quotes stay balanced. British spelling.',
+    'Reply with JSON only: {"fixes":[{"old":"the sentence exactly as listed","new":"the replacement"}]}','THE PAGE, for context:',scene].join('\n\n');
+  try{const r=await SAMPLE.json(p,{modelTier:'complex',cache:false});if(r&&Array.isArray(r.fixes))r.fixes.forEach(f=>{if(f&&typeof f.old==='string'&&typeof f.new==='string'&&f.old&&scene.includes(f.old))scene=scene.replace(f.old,f.new.trim()).replace(/(^|\s)["“]\s*["”](?=\s|$)/g,'$1').replace(/ {2,}/g,' ').replace(/ +\n/g,'\n')})}catch(e){}
+  setBusy(false);return scene}
 let undo=null;
 async function act(text,opts){opts=opts||{};
   if(inTurn||!SAMPLE)return;inTurn=true;liveText='';
@@ -186,6 +201,7 @@ async function act(text,opts){opts=opts||{};
   inTurn=false;liveText='';setBusy(false);live.hidden=true;live.innerHTML='';pend.remove();
   if(!out||!out.scene){clearPending();if(opts.redo){state=Object.assign(fresh(),JSON.parse(opts.redo.backup.state));turns.push(opts.redo.backup.turn);renderAll()}showErr({code:'invalid_json'});renderOptions(turns[turns.length-1]||null);return}
   const snap=JSON.stringify(state);
+  out.scene=await polishScene(String(out.scene));
   const ch=Math.max(1,Math.min(17,parseInt(out.chapter)||state.chapter||2));
   const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],skip:(out.skip&&typeof out.skip==='string')?out.skip.slice(0,120):'',chapter:ch,chapterStart:(opts.redo&&!opts.redo.exact)?!!opts.redo.backup.turn.chapterStart:(ch!==state.chapter||!turns.length),
     tag:String(out.tag||state.tag),tod:['day','dusk','night'].includes(out.tod)?out.tod:'day',present:Array.isArray(out.present)?out.present.map(String):[],at:new Date().toISOString()};
