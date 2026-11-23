@@ -82,7 +82,8 @@ function renderOptions(t){optsEl.innerHTML='';$('lead').textContent='WHAT DO YOU
   if(!SAMPLE){$('lead').textContent='OPEN THIS PAGE IN CLAUDE TO PLAY';return}
   if(!t){const b=document.createElement('button');b.type='button';b.className='opt cont';b.textContent='BEGIN';b.addEventListener('click',()=>act('[begin]'));optsEl.appendChild(b);return}
   if(state.ended){$('lead').textContent='THE END OF THE FIRST YEAR';return}
-  (t.options||[]).forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML='<span class="n">'+(i+1)+'</span><span>'+esc(o)+'</span>';b.addEventListener('click',()=>act(o));optsEl.appendChild(b)})}
+  (t.options||[]).forEach((o,i)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML='<span class="n">'+(i+1)+'</span><span>'+esc(o)+'</span>';b.addEventListener('click',()=>act(o));optsEl.appendChild(b)});
+  if(t.skip){const b=document.createElement('button');b.type='button';b.className='opt skip';b.innerHTML='<span class="n">»</span><span>'+esc(t.skip)+'</span>';b.addEventListener('click',()=>act(t.skip));optsEl.appendChild(b)}}
 const scrollToLatest=()=>setTimeout(()=>{const el=log.querySelector('.present')||log.querySelector('.turn.latest');if(el)window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+window.scrollY-8),behavior:'smooth'})},60);
 const scrollEnd=()=>setTimeout(()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}),40);
 function setBusy(on,txt){busy.hidden=!on;if(txt)busyText.textContent=txt}
@@ -142,7 +143,8 @@ function prompt(action){
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
     '{"scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
-    ' "options":["3 or 4 choices, each at most 14 words, in the first person as the player, e.g. \"I grab the key.\" (never he/Robert)"],'+
+    ' "options":["exactly 4 choices, each at most 14 words, in the first person as the player, e.g. \"I grab the key.\" (never he/Robert); the 4th is the wild card"],'+
+    ' "skip":null, or a short first-person way to move on to the next real event when a chapter has run long or the scene is done (shown as a separate button),'+
     ' "chapter":the book chapter this page belongs to (2-17),'+
     ' "date":"in-story date e.g. Wednesday 31 July 1991",'+
     ' "location":"short place name",'+
@@ -175,7 +177,7 @@ async function act(text){
   inTurn=false;liveText='';setBusy(false);live.hidden=true;live.innerHTML='';pend.remove();
   if(!out||!out.scene){clearPending();showErr({code:'invalid_json'});renderOptions(turns[turns.length-1]||null);return}
   const ch=Math.max(1,Math.min(17,parseInt(out.chapter)||state.chapter||2));
-  const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],chapter:ch,chapterStart:ch!==state.chapter||!turns.length,
+  const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],skip:(out.skip&&typeof out.skip==='string')?out.skip.slice(0,120):'',chapter:ch,chapterStart:ch!==state.chapter||!turns.length,
     tag:String(out.tag||state.tag),tod:['day','dusk','night'].includes(out.tod)?out.tod:'day',present:Array.isArray(out.present)?out.present.map(String):[],at:new Date().toISOString()};
   if(Array.isArray(out.cast))out.cast.forEach(c=>{if(c&&c.name&&c.name!=='Robert Potter'){const h=String(c.house||'').toLowerCase();c.house=['ghost','portrait'].includes(h)?h:h?h[0].toUpperCase()+h.slice(1):null;state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)}});
   {const g=parseInt(out.gift);if(g>(state.giftStage||1)&&g<=5){state.giftStage=g;t.giftUp=g}}
