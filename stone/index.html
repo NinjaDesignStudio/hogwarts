@@ -222,7 +222,7 @@ function prompt(action){
     '=== WHO ROBERT IS BECOMING (from the player\'s choices) ===',state.self||'(not yet shown: he starts as the book\'s boy, and the player\'s choices will shape him)',
     '=== ROBERT\'S POCKETS (kept by you, never shown as a list in the story) ===',packText(),
     '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
-    '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
+    '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-50).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
     '=== RECENT PAGES ===',recent||'(none)',
     '=== WORN-OUT PHRASES (used too often lately; do not use any of them on this page) ===',wornPhrases()||'(none)',
@@ -230,7 +230,8 @@ function prompt(action){
     '=== ROBERT\'S ACTION (the player\'s words; "I" means Robert; write the page in third person) ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action==='[continue]'?'Continue.':action,
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
-    '{"scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
+    '{"plan":"one or two sentences, never shown to the player: what happens on this page and where it stops, checked against PROPORTION, PACING, NO NAGGING and SAY IT PLAINLY",'+
+    ' "scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
     ' "options":["exactly 4 choices, each at most 14 words, in the first person as the player, e.g. \"I grab the key.\" (never he/Robert); the 4th is the wild card"],'+
     ' "skip":null, or a short first-person way to move on to the next real event when a chapter has run long or the scene is done (shown as a separate button),'+
     ' "chapter":the book chapter this page belongs to (2-17),'+
@@ -274,7 +275,7 @@ async function act(text){
   {const g=parseInt(out.gift);if(g>(state.giftStage||1)&&g<=5){state.giftStage=g;t.giftUp=g}}
   if(Array.isArray(out.ledger))state.ledger=out.ledger.map(String).slice(0,30);
   if(out.self&&typeof out.self==='string')state.self=out.self.slice(0,700);
-  if(out.pack&&typeof out.pack==='object'){const A=a=>Array.isArray(a)?a.map(String).slice(0,40):[];state.pack={items:A(out.pack.items),gold:String(out.pack.gold||(state.pack&&state.pack.gold)||''),spells:A(out.pack.spells),knows:A(out.pack.knows)}}
+  if(out.pack&&typeof out.pack==='object'){const A=a=>Array.isArray(a)?a.map(String).slice(0,45):[];state.pack={items:A(out.pack.items),gold:String(out.pack.gold||(state.pack&&state.pack.gold)||''),spells:A(out.pack.spells),knows:A(out.pack.knows)}}
   state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
   Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
   turns.push(t);if(turns.length>600)turns=turns.slice(-600);

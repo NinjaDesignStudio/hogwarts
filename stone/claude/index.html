@@ -66,6 +66,7 @@ p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);pad
 .card{background:var(--paper);width:100%;max-width:720px;max-height:88vh;overflow:auto;border-radius:12px 12px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px));box-sizing:border-box}
 .card h2{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-size:9px;letter-spacing:.08em;color:var(--accent);margin:0 0 14px}
 .k{font-family:var(--display);font-size:7px;letter-spacing:.08em;color:var(--muted);margin:16px 0 6px}
+.card textarea{width:100%;box-sizing:border-box;font:inherit;font-size:17px;line-height:1.4;color:var(--ink);background:var(--paper2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;resize:vertical}.card .go{min-height:44px;margin-top:10px}.bar{gap:8px}
 .card input,.card select{width:100%;box-sizing:border-box;font:inherit;font-size:17px;color:var(--ink);background:var(--paper2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
 .card .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .card a{color:var(--accent)}
@@ -84,7 +85,7 @@ p.you{font-style:italic;color:var(--muted);border-left:3px solid var(--gold);pad
     <div class="lead"><span id="lead">WHAT DO YOU DO?</span><span id="saved"></span></div>
     <div id="options"></div>
     <form id="free" autocomplete="off"><textarea id="action" rows="1" placeholder="Or tell me what you do…" enterkeyhint="go"></textarea><button class="go" id="b-go">Go</button></form>
-    <div class="bar"><button type="button" class="mini" id="b-journal">Journal</button><span class="sp"></span><button type="button" class="mini" id="b-settings">Settings</button></div>
+    <div class="bar"><button type="button" class="mini" id="b-journal">Journal</button><button type="button" class="mini" id="b-redo" hidden>Redo page</button><span class="sp"></span><button type="button" class="mini" id="b-settings">Settings</button></div>
   </div>
 </div>
 <div id="modal" hidden><div class="card"><h2><span id="m-title"></span><button type="button" class="mini" id="m-close">Close</button></h2><div id="m-body"></div></div></div>

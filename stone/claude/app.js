@@ -44,9 +44,11 @@ async function loadAll(){
   state=fresh();turns=[];if(!DB||!UID)return;
   const st=await col().doc('state').get();if(st.exists)state=Object.assign(fresh(),JSON.parse(JSON.stringify(st.data())));
   const q=await col().where('kind','==','page').orderBy('n','desc').limit(6).get();
-  turns=q.docs.map(d=>JSON.parse(JSON.stringify(d.data()))).filter(t=>t.n<=state.n).sort((a,b)=>a.n-b.n);
+  turns=q.docs.map(d=>JSON.parse(JSON.stringify(d.data()))).filter(t=>t.n<=state.n).sort((a,b)=>a.n-b.n);fixLog();
   const sv=await col().doc('settings').get();if(sv.exists){Object.assign(S,sv.data());applyType()}
 }
+/* a page's own "log" is the truth for its line in the story-so-far */
+function fixLog(){const c=state.chronicle;if(!Array.isArray(c))return;turns.forEach(t=>{if(t&&t.log){const i=c.length-1-(state.n-t.n);if(i>=0&&i<c.length)c[i]='['+(t.chapter||state.chapter)+'] '+t.log}})}
 let writing=Promise.resolve();
 function save(page){
   if(!DB||!UID){$('saved').textContent='NOT SAVED';return}
@@ -78,7 +80,7 @@ function renderAll(){log.innerHTML='';
   if(show.length>1){const det=document.createElement('details');det.className='earlier';const sm=document.createElement('summary');sm.textContent='EARLIER · '+(show.length-1)+(show.length===2?' PAGE':' PAGES');det.appendChild(sm);show.slice(0,-1).forEach(t=>det.appendChild(renderTurn(t,true,false)));log.appendChild(det)}
   const last=show[show.length-1];log.appendChild(renderPresent(last));log.appendChild(renderTurn(last,false,true));
   paint(last.tag||state.tag,last.tod||state.tod);$('loc').textContent=state.location||'';$('date').textContent=state.date||'';renderOptions(last)}
-function renderOptions(t){optsEl.innerHTML='';$('lead').textContent='WHAT DO YOU DO?';
+function renderOptions(t){optsEl.innerHTML='';$('lead').textContent='WHAT DO YOU DO?';$('b-redo').hidden=!(SAMPLE&&t&&t.action&&!state.ended);
   if(!SAMPLE){$('lead').textContent='OPEN THIS PAGE IN CLAUDE TO PLAY';return}
   if(!t){const b=document.createElement('button');b.type='button';b.className='opt cont';b.textContent='BEGIN';b.addEventListener('click',()=>act('[begin]'));optsEl.appendChild(b);return}
   if(state.ended){$('lead').textContent='THE END OF THE FIRST YEAR';return}
@@ -124,7 +126,7 @@ function wornPhrases(){
   const seen={};pages.forEach((p,i)=>{const w=p.replace(/[^a-z' ]+/g,' ').split(/\s+/).filter(Boolean);const mine=new Set();for(let k=0;k+4<=w.length;k++){const g=w.slice(k,k+4);if(g.filter(x=>!stop.has(x)).length<2)continue;mine.add(g.join(' '))}mine.forEach(g=>{seen[g]=(seen[g]||0)+1})});
   Object.keys(seen).filter(g=>seen[g]>=3&&!/robert|figg|hagrid|dumbledore|petunia|vernon|dudley|malfoy|quirrell|draconia|pryce|said robert/.test(g)).slice(0,15).forEach(g=>out.push('"'+g+'" ('+seen[g]+' pages)'));
   return out.join('\n')}
-function prompt(action){
+function prompt(action,redo){
   const recent=turns.slice(-2).map(t=>(t.action&&!/^\[/.test(t.action)?'ROBERT DID: '+t.action+'\n':'')+t.scene).join('\n\n---\n\n');
   const last=turns.length?turns[turns.length-1]:null;
   return [window.STONE_GM.rules,window.STONE_GM.bible,
@@ -134,15 +136,17 @@ function prompt(action){
     '=== WHO ROBERT IS BECOMING (from the player\'s choices) ===',state.self||'(not yet shown: he starts as the book\'s boy, and the player\'s choices will shape him)',
     '=== ROBERT\'S POCKETS (kept by you, never shown as a list in the story) ===',packText(),
     '=== LEDGER (how this telling has left the book) ===',(state.ledger&&state.ledger.length?state.ledger.map(x=>'- '+x).join('\n'):'(nothing yet: the story is on the book\'s road)'),
-    '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-120).join('\n')||'(this is the first page)',
+    '=== STORY SO FAR (one line per page) ===',(state.chronicle||[]).slice(-50).join('\n')||'(this is the first page)',
     '=== CAST ALREADY DESCRIBED ===',Object.keys(state.cast||{}).join(', '),
     '=== RECENT PAGES ===',recent||'(none)',
     '=== WORN-OUT PHRASES (used too often lately; do not use any of them on this page) ===',wornPhrases()||'(none)',
     '=== OPTIONS OFFERED LAST PAGE ===',last&&last.options?last.options.map((o,i)=>(i+1)+'. '+o).join('\n'):'(none)',
     '=== ROBERT\'S ACTION (the player\'s words; "I" means Robert; write the page in third person) ===',action==='[begin]'?'Begin the story: the morning of Dudley\'s eleventh birthday, Robert in the cupboard under the stairs. Open with a short, vivid page that sets up who Robert is and how he lives.':action,
+    redo?'=== REDO ===\nThe player asked for the last page to be written again from the same action. Write a clearly different page: change the events or outcome where his note asks, and use fresh wording throughout.'+(redo.note?'\nWhat the player wants changed: '+redo.note:'')+(redo.exact?'':'\nPOCKETS, LEDGER and WHO ROBERT IS BECOMING may already include what happened on the rejected page; return corrected full versions if the new page differs.')+'\nREJECTED VERSION (do not reuse its wording):\n'+redo.rejected:'',
     '=== OUTPUT ===',
     'Reply with one JSON object only, no other text, keys in this order:',
-    '{"scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
+    '{"plan":"one or two sentences, never shown to the player: what happens on this page and where it stops, checked against PROPORTION, PACING, NO NAGGING and SAY IT PLAINLY",'+
+    ' "scene":"the page, 300-550 words, paragraphs separated by \\n\\n",'+
     ' "options":["exactly 4 choices, each at most 14 words, in the first person as the player, e.g. \"I grab the key.\" (never he/Robert); the 4th is the wild card"],'+
     ' "skip":null, or a short first-person way to move on to the next real event when a chapter has run long or the scene is done (shown as a separate button),'+
     ' "chapter":the book chapter this page belongs to (2-17),'+
@@ -157,36 +161,43 @@ function prompt(action){
     ' "pack":null, or the FULL updated pockets object {"items":["..."],"gold":"...","spells":["..."],"knows":["..."]} when anything in it changed on this page,'+
     ' "self":null, or a fresh 2-3 sentence summary of who Robert is becoming when the player\'s choices have shifted him,'+
     ' "log":"one line: what happened on this page",'+
-    ' "end":false (true only on the final page, with "options":[])}'].join('\n\n')}
+    ' "end":false (true only on the final page, with "options":[])}'].filter(x=>x!=='').join('\n\n')}
 
-async function act(text){
+let undo=null;
+async function act(text,opts){opts=opts||{};
   if(inTurn||!SAMPLE)return;inTurn=true;liveText='';
   try{const p=JSON.parse(localStorage.getItem('stone.pending')||'{}');localStorage.setItem('stone.pending',JSON.stringify({text,n:state.n,at:Date.now(),tries:p.text===text?(p.tries||0)+1:0}))}catch(e){}
   stopSpeaking();
-  try{if(DB&&UID){const st=await col().doc('state').get();if(st.exists){const d=st.data();if(Array.isArray(d.changes))state.changes=JSON.parse(JSON.stringify(d.changes));if(typeof d.self==='string')state.self=d.self;if(d.pack&&typeof d.pack==='object')state.pack=JSON.parse(JSON.stringify(d.pack));if(d.cast&&typeof d.cast==='object')state.cast=JSON.parse(JSON.stringify(d.cast))}}}catch(e){}
+  if(!opts.redo){try{if(DB&&UID&&state.n>0){await writing;const st=await col().doc('state').get();if(st.exists){const d=JSON.parse(JSON.stringify(st.data()));const last=turns[turns.length-1];let stale=d.n>state.n;
+    if(!stale&&d.n===state.n&&last){const pg=await col().doc('p'+String(state.n).padStart(4,'0')).get();if(pg.exists){const p=pg.data();if(String(p.scene)!==String(last.scene)||JSON.stringify(p.options||[])!==JSON.stringify(last.options||[]))stale=true}}
+    if(stale){const typed=!/^\[/.test(text)&&!(last&&((last.options||[]).includes(text)||last.skip===text));await loadAll();renderAll();scrollToLatest();inTurn=false;try{localStorage.removeItem('stone.pending')}catch(_){}
+      const nd=document.createElement('div');nd.className='err';nd.innerHTML='<b>This page was updated</b><p>Your story changed since this tab last loaded it, so here is the latest page. Read it and choose again.</p>';log.appendChild(nd);if(typed){input.value=text;growInput()}return}
+    if(d.n===state.n){state=Object.assign(fresh(),d);fixLog()}}}}catch(e){}}
   const pend=document.createElement('div');pend.className='turn';if(!/^\[/.test(text))pend.innerHTML='<p class="you">'+esc(text)+'</p>';log.appendChild(pend);
   optsEl.innerHTML='';input.value='';input.style.height='';setBusy(true,'The quill is thinking…');live.hidden=true;scrollEnd();
   let out,shown=false;const clearPending=()=>{try{localStorage.removeItem('stone.pending')}catch(_){}};
   try{
     for(let tries=0;;tries++){
-      try{out=await SAMPLE.json(prompt(text),{modelTier:'complex',cache:false,onText:({text:raw})=>{const sc=partialScene(String(raw||''));if(sc&&sc.length>12){if(!shown){shown=true;live.hidden=false;setBusy(false)}liveText=sc;renderLive(sc,partialScene.done)}else busyText.textContent='Writing…'}});break}
+      try{out=await SAMPLE.json(prompt(text,opts.redo),{modelTier:'complex',cache:false,onText:({text:raw})=>{const sc=partialScene(String(raw||''));if(sc&&sc.length>12){if(!shown){shown=true;live.hidden=false;setBusy(false)}liveText=sc;renderLive(sc,partialScene.done)}else busyText.textContent='Writing…'}});break}
       catch(e){if(tries>=2||!['unavailable','overloaded','network'].includes(e&&e.code))throw e;
         live.hidden=true;shown=false;setBusy(true,'The connection dropped. Trying again…');await new Promise(r=>setTimeout(r,1500))}
     }
-  }catch(e){inTurn=false;liveText='';clearPending();setBusy(false);pend.remove();live.hidden=true;showErr(e||{});renderOptions(turns[turns.length-1]||null);scrollEnd();return}
+  }catch(e){inTurn=false;liveText='';clearPending();setBusy(false);pend.remove();live.hidden=true;if(opts.redo){state=Object.assign(fresh(),JSON.parse(opts.redo.backup.state));turns.push(opts.redo.backup.turn);renderAll()}showErr(e||{});renderOptions(turns[turns.length-1]||null);scrollEnd();return}
   inTurn=false;liveText='';setBusy(false);live.hidden=true;live.innerHTML='';pend.remove();
-  if(!out||!out.scene){clearPending();showErr({code:'invalid_json'});renderOptions(turns[turns.length-1]||null);return}
+  if(!out||!out.scene){clearPending();if(opts.redo){state=Object.assign(fresh(),JSON.parse(opts.redo.backup.state));turns.push(opts.redo.backup.turn);renderAll()}showErr({code:'invalid_json'});renderOptions(turns[turns.length-1]||null);return}
+  const snap=JSON.stringify(state);
   const ch=Math.max(1,Math.min(17,parseInt(out.chapter)||state.chapter||2));
-  const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],skip:(out.skip&&typeof out.skip==='string')?out.skip.slice(0,120):'',chapter:ch,chapterStart:ch!==state.chapter||!turns.length,
+  const t={n:state.n+1,action:text,scene:String(out.scene),options:Array.isArray(out.options)?out.options.map(String).slice(0,4):[],skip:(out.skip&&typeof out.skip==='string')?out.skip.slice(0,120):'',chapter:ch,chapterStart:(opts.redo&&!opts.redo.exact)?!!opts.redo.backup.turn.chapterStart:(ch!==state.chapter||!turns.length),
     tag:String(out.tag||state.tag),tod:['day','dusk','night'].includes(out.tod)?out.tod:'day',present:Array.isArray(out.present)?out.present.map(String):[],at:new Date().toISOString()};
   if(Array.isArray(out.cast))out.cast.forEach(c=>{if(c&&c.name&&c.name!=='Robert Potter'){const h=String(c.house||'').toLowerCase();c.house=['ghost','portrait'].includes(h)?h:h?h[0].toUpperCase()+h.slice(1):null;state.cast[String(c.name)]=Object.assign({},state.cast[String(c.name)]||{},c)}});
   {const g=parseInt(out.gift);if(g>(state.giftStage||1)&&g<=5){state.giftStage=g;t.giftUp=g}}
   if(Array.isArray(out.ledger))state.ledger=out.ledger.map(String).slice(0,30);
   if(out.self&&typeof out.self==='string')state.self=out.self.slice(0,700);
-  if(out.pack&&typeof out.pack==='object'){const A=a=>Array.isArray(a)?a.map(String).slice(0,40):[];state.pack={items:A(out.pack.items),gold:String(out.pack.gold||(state.pack&&state.pack.gold)||''),spells:A(out.pack.spells),knows:A(out.pack.knows)}}
-  state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+String(out.log||t.scene.slice(0,100))]).slice(-400);
+  if(out.pack&&typeof out.pack==='object'){const A=a=>Array.isArray(a)?a.map(String).slice(0,45):[];state.pack={items:A(out.pack.items),gold:String(out.pack.gold||(state.pack&&state.pack.gold)||''),spells:A(out.pack.spells),knows:A(out.pack.knows)}}
+  t.log=String(out.log||t.scene.slice(0,100));state.chronicle=(state.chronicle||[]).concat(['['+ch+'] '+t.log]).slice(-400);
   Object.assign(state,{n:t.n,chapter:ch,date:String(out.date||state.date),location:String(out.location||state.location),tag:t.tag,tod:t.tod,ended:!!out.end,updated:t.at});
   turns.push(t);if(turns.length>6)turns=turns.slice(-6);
+  undo={n:t.n,state:snap};try{localStorage.setItem('stone.undo',JSON.stringify(undo))}catch(e){}
   clearPending();save(t);renderAll();scrollToLatest();
   if(S.autoRead)speakCurrent();
 }
@@ -216,6 +227,14 @@ function journal(tab){tab=tab||'story';
   if(tab==='gift'){const L=window.STONE_GM.ladder,st=state.giftStage||1;body=L.map(r=>{const now=r.stage===st,done=r.stage<st;return '<div class="rung'+(now?' now':'')+(r.stage>st?' later':'')+'"><div class="k">'+(now?'YOU ARE HERE · ':done?'DONE · ':'')+'STAGE '+r.stage+' · '+esc(r.name.toUpperCase())+'</div><p class="note" style="margin:0 0 6px">'+esc(r.when)+'</p>'+(r.stage<=st?'<ul>'+r.can.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>':'<ul>'+r.can.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>')+(now?'<p><b>Not yet:</b> '+esc(r.cant.join(' '))+'</p><p><b>Next rung unlocks with:</b> '+esc(r.unlock)+'</p>':'')+'</div>'}).join('')+'<p class="note">Never this year: Dark curses, controlling a person like a puppet, wiping memories, Apparition, beating a prepared grown wizard head-on.</p>'}
   openModal('JOURNAL',tabs+body);$('m-body').querySelectorAll('[data-t]').forEach(b=>b.addEventListener('click',()=>journal(b.dataset.t)))}
 $('b-journal').addEventListener('click',()=>journal());
+function redoPage(note){const last=turns[turns.length-1];if(!last||inTurn||state.ended||!last.action||!SAMPLE)return;
+  const backup={state:JSON.stringify(state),turn:last};let u=undo;if(!u){try{u=JSON.parse(localStorage.getItem('stone.undo')||'null')}catch(e){}}
+  const exact=!!(u&&u.n===last.n&&u.state);
+  if(exact)state=Object.assign(fresh(),JSON.parse(u.state));else{state.n=last.n-1;state.chronicle=(state.chronicle||[]).slice(0,-1)}
+  turns=turns.slice(0,-1);renderAll();act(last.action,{redo:{backup,note:String(note||'').trim().slice(0,600),rejected:last.scene,exact}})}
+$('b-redo').addEventListener('click',()=>{if(inTurn)return;
+  openModal('REDO THIS PAGE','<p class="note">Writes the latest page again from the same action. The current version is replaced.</p><div class="k">WHAT SHOULD CHANGE? (OPTIONAL)</div><textarea id="rd-note" rows="4" placeholder="e.g. Nobody notices the missing sheet. Keep it lighter."></textarea><div class="row"><button type="button" class="go" id="rd-go">Redo this page</button></div>');
+  $('rd-go').addEventListener('click',()=>{const n=$('rd-note').value;$('modal').hidden=true;redoPage(n)})});
 function settings(){
   const voice=TTS?'<div class="k">NARRATOR VOICE</div><select id="st-voice"><option value="buttery">Buttery</option><option value="airy">Airy</option><option value="glassy">Glassy</option><option value="rounded">Rounded</option></select>':'<p class="note">The Claude voice is not offered in this browser, so Listen uses your device\'s own voice.</p>';
   openModal('SETTINGS',
